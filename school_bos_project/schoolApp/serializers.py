@@ -103,7 +103,7 @@ class HomeworkSerializer(serializers.ModelSerializer):
         model = Homework
         fields = [
             'id', 'teacher', 'teacher_name',
-            'assignment_type', 'classroom', 'classroom_name',
+            'assignment_type',  'classroom_name',
             'student_ids', 'student_names',
             'title', 'description', 'subject', 'due_date', 'file', 'created_at'
         ]

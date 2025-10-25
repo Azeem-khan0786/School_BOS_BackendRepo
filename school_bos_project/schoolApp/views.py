@@ -207,7 +207,7 @@ class ClassRoomViewSet(viewsets.ModelViewSet):
 class HomeworkViewSet(viewsets.ModelViewSet):
     queryset = Homework.objects.all().order_by('-created_at')
     serializer_class = HomeworkSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save(teacher=self.request.user)
@@ -242,12 +242,12 @@ class AdminDashboard(APIView):
 
         # Classes with student count
         classes = []
-        for c in ClassRoom.objects.all():
+        for c in Class.objects.all():
             student_count = StudentProfile.objects.filter(class_name=c).count()
             classes.append({
                 "id": c.id,
                 "class_name": c.class_name,
-                "section_name": c.section_name,
+                "section_name": c.section,
                 "student_count": student_count
             })
         # Recent attendance alerts (latest 5 absentees)

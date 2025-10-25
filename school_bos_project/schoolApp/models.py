@@ -26,7 +26,7 @@ class ClassRoom(models.Model):
         ('smart_board', 'Smart Board'),
         ('digital_display', 'Digital Display'),
     ]
-    name = models.CharField(max_length=50)
+    class_room = models.CharField(max_length=50) # LTU1,LTU2
     # section_name = models.CharField(max_length=10, blank=True, null=True)
     capacity = models.PositiveIntegerField(null=True, blank=True)
     location = models.CharField(max_length=100, blank=True, null=True)
@@ -37,11 +37,11 @@ class ClassRoom(models.Model):
         help_text="Type of board or teaching equipment available"
     )
     def __str__(self):
-        return f"{self.name}" 
+        return f"{self.class_room}" 
     
 class Class(models.Model):
     """Represents an academic class such as 'Class X - A'."""
-    name = models.CharField(max_length=50)               # e.g., Class X
+    class_name = models.CharField(max_length=50)               # e.g., Class X
     section = models.CharField(max_length=10, blank=True, null=True)  # e.g., A, B
     subjects = models.ManyToManyField(Subject, related_name='classes')
     classrooms = models.ManyToManyField(ClassRoom, related_name='classes')
@@ -49,7 +49,7 @@ class Class(models.Model):
     max_seats = models.PositiveIntegerField(default=40)
 
     def __str__(self):
-        return f"{self.name} {self.section or ''}".strip()
+        return f"{self.class_name} {self.section or ''}".strip()
     
 class AdmissionInquiry(models.Model):
     student_name = models.CharField(max_length=100)

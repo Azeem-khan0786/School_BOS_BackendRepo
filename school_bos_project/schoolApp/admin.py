@@ -13,14 +13,14 @@ class SubjectAdmin(admin.ModelAdmin):
 
 @admin.register(ClassRoom)
 class ClassRoomAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'capacity', 'location')
+    list_display = ('id', 'class_room', 'capacity', 'location')
     search_fields = ('name', 'location')
     list_filter = ('location',)
 
 
 @admin.register(Class)
 class ClassAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'section', 'student_count', 'max_seats')
+    list_display = ('id', 'class_name', 'section', 'student_count', 'max_seats')
     list_filter = ('section',)
     search_fields = ('name',)
     filter_horizontal = ('subjects', 'classrooms')  # Nice UI for M2M fields
