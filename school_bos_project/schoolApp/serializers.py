@@ -144,3 +144,17 @@ class BookIssueSerializer(serializers.ModelSerializer):
             'id', 'book', 'book_title', 'issued_to', 'issued_user',
             'issue_date', 'due_date', 'return_date', 'is_returned'
         ]    
+    def validate(self, data):
+        issue_date = data.get("issue_date")
+        due_date = data.get("due_date")
+        return_date = data.get("return_date")
+        is_returned = data.get("is_returned", False)
+
+        if due_date and issue_date and due_date < issue_date:
+            raise serializers.ValidationError("Due date must be after issue date.")
+        if return_date and issue_date and return_date < issue_date:
+            raise serializers.ValidationError("Return date cannot be before issue date.")
+        if is_returned and not return_date:
+            raise serializers.ValidationError("Return date required when returned is True.")
+
+        return data

@@ -303,7 +303,10 @@ class ReturnBookView(APIView):
         return Response({
             "message": "Book returned successfully",
             "book": issue.book.title,
-            "return_date": issue.return_date
+            "return_date": issue.return_date,
+            'issue_date' : issue.issue_date,
+            'due_date' : issue.due_date,
+    
         }, status=200)
 
 

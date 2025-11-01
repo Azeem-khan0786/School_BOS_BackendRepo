@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from schoolApp.models import AdmissionInquiry,Attendance,Subject, ClassRoom, Class,Homework,Subject,FeeModel,FAQ
+from schoolApp.models import AdmissionInquiry,Attendance,Subject, ClassRoom, Class,Homework,Subject,FeeModel,FAQ,Book,BookIssue
 
 
 @admin.register(Subject)
@@ -38,7 +38,23 @@ admin.site.register(Homework)
 admin.site.register(FeeModel)
 admin.site.register(FAQ)
 
+@admin.register(Book)
+class BookAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'author', 'isbn', 'category', 'quantity', 'available_copies')
+    search_fields = ('title', 'author', 'isbn')
+    list_filter = ('category',)
+    ordering = ('title',)
 
+
+@admin.register(BookIssue)
+class BookIssueAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'book', 'issued_to', 'issue_date', 'due_date',
+        'return_date', 'is_returned'
+    )
+    list_filter = ('is_returned', 'issue_date', 'due_date')
+    search_fields = ('book__title', 'issued_to__username')
+    ordering = ('-issue_date',)
 
 
 

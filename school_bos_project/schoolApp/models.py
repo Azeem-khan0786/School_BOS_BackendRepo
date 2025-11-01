@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from multiselectfield import MultiSelectField
 from django.contrib.auth.models import User
+from rest_framework.validators import ValidationError
     # Admission inquiry form (student + parent details)
     # AdmissionInquiry form for new user who doen`t have accout in database
 class Subject(models.Model):
@@ -74,7 +75,21 @@ class BookIssue(models.Model):
 
     def __str__(self):
         return f"{self.book.title} -> {self.issued_to.username}"
+    def clean(self):
+        # issue_date can't be in the future
+        if self.issue_date > timezone.now().date():
+            raise ValidationError("Issue date cannot be in the future.")
 
+        # due_date must be after issue_date
+        if self.due_date < self.issue_date:
+            raise ValidationError("Due date must be after issue date.")
+
+        # if returned, return_date must exist and be valid
+        if self.is_returned:
+            if not self.return_date:
+                raise ValidationError("Return date required when book is returned.")
+            if self.return_date < self.issue_date:
+                raise ValidationError("Return date cannot be before issue date.")
     def save(self, *args, **kwargs):
         # Auto update available copies
         if not self.pk:  # Only when issuing
