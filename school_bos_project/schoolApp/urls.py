@@ -28,6 +28,12 @@ urlpatterns = [
     path('fee', views.FeeView.as_view(), name='fee'),
     path('faq', views.FAQAutoReplyView.as_view(), name='faq-auto-reply'),
     path('admin_dashboard', views.AdminDashboard.as_view(), name='admin_dashboard'),
+  
+    # Library management
+    path('books/', views.BookListCreateView.as_view(), name='book-list-create'),     # GET, POST
+    path('issue/', views.IssueBookView.as_view(), name='issue-book'),                # POST
+    path('return/<int:pk>/', views.ReturnBookView.as_view(), name='return-book'),    # PUT
+    path('issued/', views.IssuedBookListView.as_view(), name='issued-books'),        # GET
 ]
 
 # ✅ Combine with router URLs

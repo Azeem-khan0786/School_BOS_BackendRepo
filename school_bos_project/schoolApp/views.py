@@ -6,9 +6,9 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAdminUser,IsAuthenticated
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class
+from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue
 from Account.models import StaffProfile,TeacherProfile,ParentProfile,StudentProfile
-from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer
+from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer
 from Account.serializers import StudentProfileSerializer
 from django.contrib.auth import get_user_model
 from datetime import date
@@ -266,3 +266,48 @@ class AdminDashboard(APIView):
 
         }
         return Response(data)
+    
+# 📘 Add & List Books
+class BookListCreateView(generics.ListCreateAPIView):
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+
+
+# 📕 Issue a Book
+class IssueBookView(APIView):
+    def post(self, request):
+        serializer = BookIssueSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Book issued successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 📗 Mark Book as Returned
+class ReturnBookView(APIView):
+    def put(self, request, pk):
+        try:
+            issue = BookIssue.objects.get(pk=pk)
+        except BookIssue.DoesNotExist:
+            return Response({"error": "Issue record not found"}, status=404)
+
+        if issue.is_returned:
+            return Response({"message": "Book already returned."}, status=400)
+
+        issue.is_returned = True
+        issue.save()
+
+        return Response({
+            "message": "Book returned successfully",
+            "book": issue.book.title,
+            "return_date": issue.return_date
+        }, status=200)
+
+
+# 📙 View All Issued Books
+class IssuedBookListView(generics.ListAPIView):
+    queryset = BookIssue.objects.all()
+    serializer_class = BookIssueSerializer    

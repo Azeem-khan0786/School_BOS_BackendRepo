@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate,get_user_model
 
 # from Account.models import User, Profile ,StudentProfile,TeacherProfile,StaffProfile,ParentProfile
 
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class
+from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue
 User  =  get_user_model()
 
 
@@ -127,3 +127,20 @@ class HomeworkSerializer(serializers.ModelSerializer):
         if students:
             homework.students.set(students)
         return homework        
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = '__all__'
+
+
+class BookIssueSerializer(serializers.ModelSerializer):
+    book_title = serializers.CharField(source='book.title', read_only=True)
+    issued_user = serializers.CharField(source='issued_to.username', read_only=True)
+
+    class Meta:
+        model = BookIssue
+        fields = [
+            'id', 'book', 'book_title', 'issued_to', 'issued_user',
+            'issue_date', 'due_date', 'return_date', 'is_returned'
+        ]    
