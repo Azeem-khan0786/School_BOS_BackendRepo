@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from multiselectfield import MultiSelectField
-
+from django.contrib.auth.models import User
     # Admission inquiry form (student + parent details)
     # AdmissionInquiry form for new user who doen`t have accout in database
 class Subject(models.Model):
@@ -51,6 +51,40 @@ class Class(models.Model):
     def __str__(self):
         return f"{self.class_name} {self.section or ''}".strip()
     
+
+# Book Model
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.CharField(max_length=100)
+    isbn = models.CharField(max_length=20, unique=True)
+    category = models.CharField(max_length=50, blank=True, null=True)
+    quantity = models.PositiveIntegerField(default=1)
+    available_copies = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.title} ({self.author})"
+    
+class BookIssue(models.Model):
+    book = models.ForeignKey('Book', on_delete=models.CASCADE, related_name='issues')
+    issued_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    issue_date = models.DateField(default=timezone.now)
+    due_date = models.DateField()
+    return_date = models.DateField(blank=True, null=True)
+    is_returned = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.book.title} -> {self.issued_to.username}"
+
+    def save(self, *args, **kwargs):
+        # Auto update available copies
+        if not self.pk:  # Only when issuing
+            book = self.book
+            if book.available_copies > 0:
+                book.available_copies -= 1
+                book.save()
+            else:
+                raise ValueError("No copies available for issue")
+        super().save(*args, **kwargs)    
 class AdmissionInquiry(models.Model):
     student_name = models.CharField(max_length=100)
     parent_name = models.CharField(max_length=100)
