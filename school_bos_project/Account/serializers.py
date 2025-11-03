@@ -38,26 +38,45 @@ class LoginSerializer(serializers.Serializer):
         username = data.get("username")
         password = data.get("password")
 
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if user:
-                if not user.is_active:
-                    raise serializers.ValidationError("User account is disabled.")
-                data["user"] = user
-            else:
-                raise serializers.ValidationError("Invalid username or password.")
-        else:
-            raise serializers.ValidationError("Must include username and password.")
+        user = authenticate(username=username, password=password)
+        if not user:
+            raise serializers.ValidationError("Invalid username or password.")
+        if not user.is_active:
+            raise serializers.ValidationError("User account is disabled.")
+        data["user"] = user
         return data
     
-# class ProfileSerializer(serializers.ModelSerializer):
-#     username = serializers.CharField(source='user.username', read_only=True)
-#     email = serializers.CharField(source='user.email', read_only=True)
-    
-#     class Meta:
-#         model = Profile
-#         fields = ['id', 'username', 'email', 'gender', 'dob', 'language_preference','address']  # add your actual fields
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
 
+    def validate(self, data):
+        user = self.context['request'].user
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+
+        # Check old password
+        if not user.check_password(old_password):
+            raise serializers.ValidationError({"old_password": "Old password is incorrect."})
+
+        # Check new passwords match
+        if new_password != confirm_password:
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+
+        # Optionally add password strength validation
+        if len(new_password) < 8:
+            raise serializers.ValidationError({"new_password": "Password must be at least 8 characters."})
+
+        return data
+
+    def save(self, **kwargs):
+        user = self.context['request'].user
+        new_password = self.validated_data['new_password']
+        user.set_password(new_password)
+        user.save()
+        return user    
 class TeacherProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
 

@@ -7,8 +7,11 @@ urlpatterns = [
     
     path('register/', views.RegisterView.as_view(), name='register'),       # POST
     path('register/<int:pk>/', views.RegisterView.as_view(), name='user-detail'),  # GET
-    path('login/', views.LoginView.as_view(), name='login'),       # POST
-    path('logout/', views.LogOutView.as_view(), name='logout'),       # POST
+    path('login/', views.LoginView.as_view(), name='jwt-login'),
+    path('logout/', views.LogoutView.as_view(), name='jwt-logout'),
+    path('token/refresh/', views.TokenRefreshView.as_view(), name='token-refresh'),
+    path('change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+
     # path('profile/<int:pk>/', views.ProfileView.as_view(), name='profile-detail'),  # GET
     # path('profile/', views.ProfileView.as_view(), name='profile-detail'),  # POST
     path('student_profile/<int:pk>/', views.StudentProfileView.as_view(), name='student-profile-detail'), # GET

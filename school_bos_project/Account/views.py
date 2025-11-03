@@ -3,8 +3,11 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import generics
+from rest_framework.generics import GenericAPIView
+from rest_framework_simplejwt.tokens import RefreshToken,TokenError
 from rest_framework.permissions import AllowAny,IsAuthenticated
-from .serializers import RegisterSerializer,LoginSerializer,StudentProfileSerializer,TeacherProfileSerializer,StaffProfileSerializer,ParentProfileSerializer
+from .serializers import RegisterSerializer,LoginSerializer,ChangePasswordSerializer,StudentProfileSerializer,TeacherProfileSerializer,StaffProfileSerializer,ParentProfileSerializer
+from rest_framework_simplejwt.views import TokenRefreshView
 from .models import User,StudentProfile,TeacherProfile,StaffProfile,ParentProfile
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -30,48 +33,50 @@ class RegisterView(APIView):
 
 # Login API
 # ---------------------------
-class LoginView(APIView):
+
+class LoginView(GenericAPIView):
+    serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         user = serializer.validated_data["user"]
-        login(request, user)
-        return Response({"message": "Login successful", "username": user.username, "role": user.role})
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "message": "Login successful",
+            "username": user.username,
+            "role": user.role,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        }, status=status.HTTP_200_OK)
 # logged out 
-class LogOutView(APIView):
-    permission_classes = [IsAuthenticated]    
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def post(self,request):
-        logout(request)
-        return Response({'message':'User Loggedout Successfully!'},status=status.HTTP_200_OK )
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
+        except KeyError:
+            return Response({"error": "Refresh token is required."}, status=status.HTTP_400_BAD_REQUEST)
+        except TokenError:
+            return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
 
-# @method_decorator(csrf_exempt,name='dispatch')
-# class ProfileView(APIView):
-#     authentication_classes = []        # Disable SessionAuthentication (CSRF)
-#     permission_classes = [AllowAny]     # Allow public access for now
-#     def get(self, request, pk):
-#         try:
-#             profile = Profile.objects.get(pk=pk)
-#             serializer = ProfileSerializer(profile)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         except Profile.DoesNotExist:
-#             return Response(
-#                 {"error": "Profile not found"},
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
+    
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated]
 
-#     def put(self, request, pk):
-#         try:
-#             profile = Profile.objects.get(pk=pk)
-#             serializer = ProfileSerializer(profile, data=request.data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data, status=status.HTTP_200_OK)
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#         except Profile.DoesNotExist:
-#             return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
         
 @method_decorator(csrf_exempt,name='dispatch')
 class StudentProfileView(APIView):

@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate,get_user_model
 
 # from Account.models import User, Profile ,StudentProfile,TeacherProfile,StaffProfile,ParentProfile
 
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue
+from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard
 User  =  get_user_model()
 
 
@@ -158,3 +158,84 @@ class BookIssueSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Return date required when returned is True.")
 
         return data
+
+
+class ExamSubjectSerializer(serializers.ModelSerializer):
+    subject_name = serializers.CharField(source='subject.subject', read_only=True)
+    subject_code = serializers.CharField(source='subject.code', read_only=True)
+    
+    class Meta:
+        model = ExamSubject
+        fields = '__all__'
+
+class ExamSerializer(serializers.ModelSerializer):
+    class_name_detail = ClassSerializer(source='class_name', read_only=True)
+    subjects = ExamSubjectSerializer(source='exam_subjects', many=True, read_only=True)
+    is_upcoming = serializers.BooleanField(read_only=True)
+    upcoming_subjects = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Exam
+        fields = '__all__'
+    
+    def get_upcoming_subjects(self, obj):
+        """Get subjects for this exam that haven't been graded for a student"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            # You can customize this based on your needs
+            # For example, get subjects that student hasn't taken yet
+            return ExamSubjectSerializer(
+                obj.exam_subjects.all(), 
+                many=True
+            ).data
+        return []
+
+class ExamCreateSerializer(serializers.ModelSerializer):
+    subjects = serializers.ListField(
+        child=serializers.DictField(),
+        write_only=True,
+        required=False,
+        help_text="List of subjects with max_marks: [{'subject': 1, 'max_marks': 100}]"
+    )
+    
+    class Meta:
+        model = Exam
+        fields = '__all__'
+    
+    def create(self, validated_data):
+        subjects_data = validated_data.pop('subjects', [])
+        exam = Exam.objects.create(**validated_data)
+        
+        # Create exam subjects
+        for subject_data in subjects_data:
+            ExamSubject.objects.create(
+                exam=exam,
+                subject_id=subject_data['subject'],
+                max_marks=subject_data['max_marks']
+            )
+        
+        return exam
+
+class GradeSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.name', read_only=True)
+    subject_name = serializers.CharField(source='subject.subject', read_only=True)
+    exam_name = serializers.CharField(source='exam.name', read_only=True)
+    class_name = serializers.CharField(source='exam.class_name.name', read_only=True)
+    
+    class Meta:
+        model = Grade
+        fields = '__all__'
+        read_only_fields = ('grade', 'percentage', 'remarks')
+
+class ReportCardSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.name', read_only=True)
+    exam_details = ExamSerializer(source='exam', read_only=True)
+    grades = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ReportCard
+        fields = '__all__'
+    
+    def get_grades(self, obj):
+        grades = Grade.objects.filter(student=obj.student, exam=obj.exam)
+        return GradeSerializer(grades, many=True).data

@@ -4,8 +4,10 @@ from django.utils import timezone
 from multiselectfield import MultiSelectField
 from django.contrib.auth.models import User
 from rest_framework.validators import ValidationError
+from django.core.validators import MinValueValidator
     # Admission inquiry form (student + parent details)
     # AdmissionInquiry form for new user who doen`t have accout in database
+    
 class Subject(models.Model):
     subject = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)  # e.g., MATH101
@@ -174,3 +176,162 @@ class Homework(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_assignment_type_display()})"
+    
+'''Exam/grades management (marks entry +
+report card).'''
+
+class Exam(models.Model):
+    EXAM_TYPES = [
+        ('mid_term', 'Mid Term'),
+        ('final', 'Final'),
+        ('quiz', 'Quiz'),
+        ('assignment', 'Assignment'),
+        ('unit_test', 'Unit Test'),
+    ]
+    
+    EXAM_STATUS = [
+        ('upcoming', 'Upcoming'),
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    name = models.CharField(max_length=100)
+    exam_type = models.CharField(max_length=20, choices=EXAM_TYPES)
+    class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='exams')
+    academic_year = models.CharField(max_length=9)
+    term = models.CharField(max_length=50)
+    total_marks = models.DecimalField(max_digits=6, decimal_places=2, default=100.00)
+    exam_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)  # For exams spanning multiple days
+    status = models.CharField(max_length=20, choices=EXAM_STATUS, default='upcoming')
+    description = models.TextField(blank=True, null=True)
+    instructions = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['name', 'class_name', 'academic_year', 'term']
+        ordering = ['exam_date']
+    
+    def __str__(self):
+        return f"{self.name} - {self.class_name} - {self.academic_year}"
+    
+    @property
+    def is_upcoming(self):
+        from django.utils import timezone
+        return self.exam_date > timezone.now().date() and self.status == 'upcoming'
+    
+    def save(self, *args, **kwargs):
+        # Auto-update status based on dates
+        from django.utils import timezone
+        today = timezone.now().date()
+        
+        if self.status != 'cancelled':
+            if self.exam_date > today:
+                self.status = 'upcoming'
+            elif self.end_date and self.end_date < today:
+                self.status = 'completed'
+            else:
+                self.status = 'ongoing'
+        
+        super().save(*args, **kwargs)
+
+class ExamSubject(models.Model):
+    """Bridge table for exams and subjects with subject-specific max marks"""
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='exam_subjects')
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    max_marks = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        help_text="Maximum marks for this subject in this exam"
+    )
+    exam_time = models.TimeField(blank=True, null=True)  # Time for this subject's exam
+    exam_duration = models.DurationField(blank=True, null=True)  # Duration of the exam
+    
+    class Meta:
+        unique_together = ['exam', 'subject']
+    
+    def __str__(self):
+        return f"{self.exam.name} - {self.subject.subject} - Max: {self.max_marks}"
+
+class Grade(models.Model):
+    student = models.ForeignKey('Account.StudentProfile', on_delete=models.CASCADE)
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    marks_obtained = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
+    max_marks = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
+    grade = models.CharField(max_length=2, blank=True)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    remarks = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['student', 'exam', 'subject']
+    
+    def save(self, *args, **kwargs):
+        # Calculate percentage
+        if self.marks_obtained and self.max_marks:
+            self.percentage = (self.marks_obtained / self.max_marks) * 100
+            self.grade = self.calculate_grade(self.percentage)
+            self.remarks = self.calculate_remarks(self.percentage)
+        
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def calculate_grade(percentage):
+        if percentage >= 90: return 'A+'
+        elif percentage >= 80: return 'A'
+        elif percentage >= 70: return 'B'
+        elif percentage >= 60: return 'C'
+        elif percentage >= 50: return 'D'
+        else: return 'F'
+    
+    @staticmethod
+    def calculate_remarks(percentage):
+        if percentage >= 80: return 'Excellent'
+        elif percentage >= 60: return 'Good'
+        elif percentage >= 50: return 'Average'
+        else: return 'Needs Improvement'
+    
+    def __str__(self):
+        return f"{self.student} - {self.subject} - {self.marks_obtained}/{self.max_marks}"
+
+class ReportCard(models.Model):
+    student = models.ForeignKey("Account.StudentProfile", on_delete=models.CASCADE)
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
+    total_marks = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    obtained_marks = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    overall_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    overall_grade = models.CharField(max_length=2, blank=True)
+    rank = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['student', 'exam']
+    
+    def save(self, *args, **kwargs):
+        # Calculate overall percentage and grade
+        grades = Grade.objects.filter(student=self.student, exam=self.exam)
+        
+        if grades.exists():
+            self.obtained_marks = sum(grade.marks_obtained for grade in grades)
+            self.total_marks = sum(grade.max_marks for grade in grades)
+            
+            if self.total_marks > 0:
+                self.overall_percentage = (self.obtained_marks / self.total_marks) * 100
+                self.overall_grade = Grade.calculate_grade(self.overall_percentage)
+        
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Report Card - {self.student} - {self.exam}"

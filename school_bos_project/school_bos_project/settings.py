@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'Account',
     'schoolApp',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
@@ -124,3 +125,17 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'Account.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+from datetime import timedelta
+
+# Optionally, add token lifetime config:
+# SIMPLE_JWT = {
+#     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+#     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+# }
