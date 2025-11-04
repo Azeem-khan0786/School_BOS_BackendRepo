@@ -1,0 +1,46 @@
+Student 
+
+
+| Field Name         | Type                                                                 | Constraints / Notes                               |
+| ------------------ | -------------------------------------------------------------------- | ------------------------------------------------- |
+| **id**             | Integer (AutoField / Primary Key)                                    | Auto-generated unique ID                          |
+| **enrollment_no**  | String (CharField, max_length=20, unique=True)                       | Unique enrollment number for each student         |
+| **name**           | String (CharField, max_length=100)                                   | Student’s full name                               |
+| **class_name**     | String (CharField, max_length=50)                                    | Class of student (e.g., 10th, 9A)                 |
+| **section**        | String (CharField, max_length=10, null=True, blank=True)             | Optional class section (e.g., A, B)               |
+| **father_name**    | String (CharField, max_length=100)                                   | Father’s name                                     |
+| **contact**        | String (CharField, max_length=15, null=True, blank=True)             | Optional contact number                           |
+| **age**            | Integer (PositiveIntegerField)                                       | Student’s age                                     |
+| **gender**         | String (CharField, choices=[("Male", "Male"), ("Female", "Female")]) | Gender selection                                  |
+| **address**        | TextField (null=True, blank=True)                                    | Optional address                                  |
+| **admission_date** | DateField (default=timezone.now)                                     | Date of admission (default = current date)        |
+| **aadhaar_number** | String (CharField, max_length=12, null=True, blank=True)             | Optional Aadhaar number                           |
+| **documents**      | JSONField / ForeignKey (to StudentDocument model)                    | Stores related uploaded documents in array format |
+
+
+
+
+==================================================================================================================================================
+
+
+Teacher
+
+
+| Field Name         | Type                                                                 | Constraints / Notes                          |
+| ------------------ | -------------------------------------------------------------------- | -------------------------------------------- |
+| **id**             | Integer (AutoField, Primary Key)                                     | Auto-generated unique ID                     |
+| **name**           | String (CharField, max_length=100)                                   | Teacher’s full name                          |
+| **email**          | String (EmailField, unique=True)                                     | Unique email ID for teacher                  |
+| **staff_id**       | String (CharField, max_length=50, unique=True)                       | Unique Staff ID assigned to each teacher     |
+| **department**     | String (CharField, max_length=100)                                   | Department name (e.g., Science, Mathematics) |
+| **classes**        | String (CharField, max_length=100, null=True, blank=True)            | Classes handled (e.g., 9th, 10th)            |
+| **subject**        | String (CharField, max_length=100, null=True, blank=True)            | Subject specialization                       |
+| **contact**        | String (CharField, max_length=15, null=True, blank=True)             | Optional contact number                      |
+| **experience**     | String (CharField, max_length=50, null=True, blank=True)             | Total years of teaching experience           |
+| **gender**         | String (CharField, choices=[("Male", "Male"), ("Female", "Female")]) | Gender selection                             |
+| **address**        | TextField (null=True, blank=True)                                    | Optional address                             |
+| **aadhaar_number** | String (CharField, max_length=12, unique=True)                       | Aadhaar card number                          |
+| **aadhaar_doc**    | FileField (upload_to="teacher_docs/")                                | Uploaded Aadhaar document                    |
+| **experience_doc** | FileField (upload_to="teacher_docs/")                                | Uploaded Experience letter/document          |
+| **created_at**     | DateTimeField (auto_now_add=True)                                    | Record creation timestamp                    |
+| **updated_at**     | DateTimeField (auto_now=True)                                        | Record last update timestamp                 |
