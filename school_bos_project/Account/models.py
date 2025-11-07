@@ -66,15 +66,29 @@ class User(AbstractUser):
 # Student Profile
 # -------------------
 class StudentProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="student_profile")
-    admission_number = models.CharField(max_length=20, unique=True)
-    admission_date = models.DateField(default=timezone.now)
-    class_name = models.CharField(max_length=50)
-    section_name = models.CharField(max_length=10)
-    parent = models.ForeignKey("ParentProfile", on_delete=models.SET_NULL, null=True, blank=True)
+    
+     # ---- Basic user-related fields ----
+    student_name = models.CharField(max_length=150, unique=True,default='xyz')
+    email = models.EmailField(unique=True,default='xyz@gail.com')
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    gender = models.CharField(max_length=10, blank=True, null=True)
+    dob = models.DateField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    profile_picture = models.ImageField(upload_to="profiles/", blank=True, null=True)
+    language_preference = models.CharField(max_length=50, default="English")
 
+    # ---- Student-specific fields ----
+    enrollement_number = models.CharField(max_length=20, unique=True, editable=False,blank=True, null=True)
+    admission_date = models.DateField(default=timezone.now)
+    class_name = models.OneToOneField("schoolApp.Class",  on_delete=models.CASCADE)
+    section_name = models.CharField(max_length=10)
+    parent_name = models.CharField(max_length=100, blank=True, null=True)
+    parent_contact = models.CharField(max_length=15, blank=True, null=True)
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return f"Student {self.user.username} - {self.class_name}{self.section_name}"
+        return f"Student {self.student_name} - {self.class_name}{self.section_name}"
 
 
 # -------------------

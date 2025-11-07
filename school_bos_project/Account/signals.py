@@ -10,8 +10,17 @@ def create_related_profiles(sender, instance, created, **kwargs):
     if created:
         # Profile.objects.create(user=instance)
 
+        # 🔒 skip for superusers or staff
+        if instance.is_superuser or instance.is_staff:
+            return
+
+
         if instance.role == "student":
-            StudentProfile.objects.create(user=instance, admission_number=f"ADM{instance.id}")
+            StudentProfile.objects.create(
+                student_name=instance.username,
+                email=instance.email,
+                enrollement_number=f"ENR{instance.id}"
+            )
         elif instance.role == "teacher":
             TeacherProfile.objects.create(user=instance, staff_id=f"TCH{instance.id}", department="General")
         elif instance.role == "parent":
