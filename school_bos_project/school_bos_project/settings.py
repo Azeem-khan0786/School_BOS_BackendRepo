@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-9!b=@e!-=kr9bj2or$8+60f@+@d%-1v_gqcc!2ka+9644ed6pe
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'Account',
     'schoolApp',
     'rest_framework_simplejwt.token_blacklist',
+    'multiselectfield',
+    'whatsapp'
 ]
 
 MIDDLEWARE = [
@@ -139,3 +141,7 @@ from datetime import timedelta
 #     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
 #     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 # }
+WHATSAPP_PHONE_NUMBER_ID = "770274896170001"
+WHATSAPP_ACCESS_TOKEN = "EAAa5YLqZCC1cBP2p6Ucq9wAUfkhihsrLZATnMxlxAsVDkMZC723ZBmz4so99eIwCfI3RCGcMQvRnwAUvEBcpzQk7yiVUDpZBuT4Gr7DFF5KggYNDA0uOtHVMdeSYqZBSZAZBE75o3RMJCRONlYkOdScnu5B1kRZAmjpmRroY6KZAiQ77W1KPgmVeHYsfHFCYj4BkiNueDZAEDETFKzAGsjgio3tbEm0tCJRf7ii8XVqGehJpywitBwJw9Q1vuIb977wtm7Ma0RMUUomcs3ou2vGqwJefQZDZD"
+VERIFY_TOKEN = "navonous_verify_token"
+APP_SECRET = "c0214f5fd8bb74bef5a30ff5c61a8296"
