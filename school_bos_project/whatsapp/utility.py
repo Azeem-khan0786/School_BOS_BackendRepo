@@ -107,7 +107,7 @@ def send_whatsapp_message(
         }
     }
 
-    url = f"https://graph.facebook.com/v22.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    url = f"https://graph.facebook.com/v24.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
         "Content-Type": "application/json"
@@ -152,3 +152,31 @@ def send_message_service(template_name, phone, variables=None, language="en", bu
         components_json_or_none=template_json,
         variables=variables or {}
     )
+
+
+
+def send_whatsapp_text(phone: str, text: str):
+    """
+    Send a plain text WhatsApp message (no template, valid only inside 24-hour session).
+    """
+    import requests
+    url = f"https://graph.facebook.com/v22.0/{settings.WHATSAPP_PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {settings.WHATSAPP_ACCESS_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "text",
+        "text": {"body": text},
+    }
+
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=10)
+        if r.status_code != 200:
+            print("❌ WhatsApp text send failed:", r.text)
+        return r.json()
+    except Exception as e:
+        print("⚠️ send_whatsapp_text error:", e)
+        return None
