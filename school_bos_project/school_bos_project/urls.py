@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('Account/', include('Account.urls')), 
     path('schoolApp/', include('schoolApp.urls')), 
+    path('whatsapp/', include('whatsapp.urls')),
   
 ]

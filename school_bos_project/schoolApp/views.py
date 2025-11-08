@@ -3,9 +3,8 @@ from rest_framework import generics,serializers
 from rest_framework import viewsets
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser,IsAuthenticated
+from rest_framework.permissions import IsAdminUser,IsAuthenticated, AllowAny
 from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue
 from Account.models import StaffProfile,TeacherProfile,ParentProfile,StudentProfile
 from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer
@@ -16,6 +15,8 @@ from rest_framework.response import Response
 from schoolApp.permissions import IsAdminOrTeacher 
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.conf import settings
+from whatsapp.utility import send_message_service
 
 # Create your views here.
 User =  get_user_model()
@@ -162,18 +163,49 @@ def approve_inquiry(inquiry_id):
 class AttendanceView(generics.ListCreateAPIView):
     queryset = Attendance.objects.all().order_by('-date')
     serializer_class = AttendanceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        # Optionally: check if attendance for this student/date already exists
-        student = self.request.data.get('student')
-        student_name = self.request.data.get('student_name')
-        date = serializer.validated_data.get('date')
+        student_name = self.request.data.get("student_name")
+        date = serializer.validated_data.get("date")
 
-        if Attendance.objects.filter(student__id=student, date=date).exists():
-            raise serializers.ValidationError({"detail": "Attendance already marked for this date."})
+        # Fetch student instance from username
+        User = get_user_model()
+        student_user = User.objects.filter(username__iexact=student_name).first()
 
-        serializer.save()
+        if not student_user:
+            raise serializers.ValidationError({"student_name": "Student not found"})
+
+        # Prevent duplicate attendance
+        if Attendance.objects.filter(student=student_user, date=date).exists():
+            raise serializers.ValidationError(
+                {"detail": "Attendance already marked for this date."}
+            )
+
+        # Save attendance record
+        attendance = serializer.save()
+
+        # ✅ Send WhatsApp notification to parent
+        if getattr(settings, "ENABLE_WHATSAPP", False):
+            student_profile = getattr(student_user, "student_profile", None)
+            parent = getattr(student_profile, "parent", None)
+            phone = getattr(parent, "phone_number", None)
+
+            if phone:
+                from whatsapp.utility import send_message_service
+
+                variables = {
+                    "1": student_user.username,
+                    "2": str(date),
+                    "3": attendance.status
+                }
+
+                send_message_service(
+                    template_name="attendance",
+                    phone=phone,
+                    variables=variables
+                )
+        
 
 class NoticeView(generics.ListCreateAPIView):
     queryset = Notice.objects.all().order_by('-date')
