@@ -14,11 +14,20 @@ urlpatterns = [
 
     # path('profile/<int:pk>/', views.ProfileView.as_view(), name='profile-detail'),  # GET
     # path('profile/', views.ProfileView.as_view(), name='profile-detail'),  # POST
-    path('student_profile/<int:pk>/', views.StudentProfileView.as_view(), name='student-profile-detail'), # GET
-    path('student_profile/', views.StudentProfileView.as_view(), name='student-profile-detail'),  # POST
+    # path('student_profile/<int:pk>/', views.StudentProfileView.as_view(), name='student-profile-detail'), # GET
+    # path('student_profile/', views.StudentProfileView.as_view(), name='student-profile-detail'),  # POST
 
-    path('teacher_profile/<int:pk>/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # GET
-    path('teacher_profile/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # POST
+    # Student CRUD endpoints
+    path('students/', views.StudentListCreateView.as_view(), name='student-list-create'),
+    path('students/<int:pk>/', views.StudentDetailView.as_view(), name='student-detail'),
+    path('students/search/', views.StudentSearchView.as_view(), name='student-search'),
+
+    path('teachers/', views.TeacherListCreateView.as_view(), name='teacher-list-create'),
+    path('teachers/<int:pk>/', views.TeacherDetailView.as_view(), name='teacher-detail'),
+    path('teachers/search/', views.TeacherSearchView.as_view(), name='teacher-search'),
+
+    # path('teacher_profile/<int:pk>/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # GET
+    # path('teacher_profile/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # POST
 
     path('parent_profile/<int:pk>/', views.ParentProfileView.as_view(), name='parent-profile-detail'),  # GET
     path('parent_profile/', views.ParentProfileView.as_view(), name='parent-profile-detail'),  # POST

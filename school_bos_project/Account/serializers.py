@@ -77,12 +77,24 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
         return user    
+    
 class TeacherProfileSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-
+    subjects_display = serializers.SerializerMethodField()
+    class_teacher_display = serializers.CharField(source='class_teacher_of.name', read_only=True)
+    
     class Meta:
         model = TeacherProfile
         fields = "__all__"
+        read_only_fields = ['staff_id', 'created_at', 'updated_at']
+    
+    def get_subjects_display(self, obj):
+        return [subject.name for subject in obj.subjects.all()]
+    
+    def validate_aadhaar_number(self, value):
+        """Validate Aadhaar number (12 digits)"""
+        if len(value) != 12 or not value.isdigit():
+            raise serializers.ValidationError("Aadhaar number must be exactly 12 digits.")
+        return value
 
 class StaffProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
@@ -96,18 +108,11 @@ class ParentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParentProfile
         fields = "__all__"
+         
 class StudentProfileSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-    # profile = ProfileSerializer(source='user.profile', read_only=True)  # show related profile
-    parent = ParentProfileSerializer(read_only=True)  
-
-    class Meta:
+     class_name_display = serializers.CharField(source='class_name.name', read_only=True)
+     
+     class Meta:
         model = StudentProfile
-        fields = "__all__"        
-
-
-    def validate_user(self, value):
-        # Check if the user's role is student
-        if value.role != 'student':
-            raise serializers.ValidationError("The selected user must have the role 'student'.")
-        return value
+        fields = "__all__"  
+        read_only_fields = ['enrollement_number', 'created_at']
