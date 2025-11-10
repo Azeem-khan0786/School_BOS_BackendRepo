@@ -5,10 +5,10 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser,IsAuthenticated
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue
+from rest_framework.permissions import IsAdminUser,IsAuthenticated,AllowAny,SAFE_METHODS,BasePermission
+from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue,TimeTable
 from Account.models import StaffProfile,TeacherProfile,ParentProfile,StudentProfile
-from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer
+from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer,TimeTableSerializer
 from Account.serializers import StudentProfileSerializer
 from django.contrib.auth import get_user_model
 from datetime import date
@@ -314,3 +314,80 @@ class ReturnBookView(APIView):
 class IssuedBookListView(generics.ListAPIView):
     queryset = BookIssue.objects.all()
     serializer_class = BookIssueSerializer    
+
+
+class IsAdminUserOrReadOnly(BasePermission):
+    """
+    Allow only admin users to create, update, or delete.
+    """
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user and request.user.is_staff
+
+
+# 🔹 CREATE (Upload TimeTable)
+class TimeTableCreateAPIView(APIView):
+    permission_classes = [IsAdminUserOrReadOnly]
+
+    def post(self, request):
+        serializer = TimeTableSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(uploaded_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 🔹 LIST (Get All TimeTables - Upload History)
+class TimeTableListAPIView(APIView):
+    permission_classes = [AllowAny]  # everyone can view
+
+    def get(self, request):
+        timetables = TimeTable.objects.all().order_by('-uploaded_on')
+        serializer = TimeTableSerializer(timetables, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 🔹 RETRIEVE (Get Single TimeTable by ID)
+class TimeTableDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        try:
+            timetable = TimeTable.objects.get(pk=pk)
+        except TimeTable.DoesNotExist:
+            return Response({'error': 'TimeTable not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TimeTableSerializer(timetable)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 🔹 UPDATE (Full update)
+class TimeTableUpdateAPIView(APIView):
+    permission_classes = [IsAdminUserOrReadOnly]
+
+    def put(self, request, pk):
+        try:
+            timetable = TimeTable.objects.get(pk=pk)
+        except TimeTable.DoesNotExist:
+            return Response({'error': 'TimeTable not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TimeTableSerializer(timetable, data=request.data)
+        if serializer.is_valid():
+            serializer.save(uploaded_by=request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 🔹 DELETE (Remove TimeTable)
+class TimeTableDeleteAPIView(APIView):
+    permission_classes = [IsAdminUserOrReadOnly]
+
+    def delete(self, request, pk):
+        try:
+            timetable = TimeTable.objects.get(pk=pk)
+        except TimeTable.DoesNotExist:
+            return Response({'error': 'TimeTable not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        timetable.delete()
+        return Response({'message': 'TimeTable deleted successfully'}, status=status.HTTP_204_NO_CONTENT)   

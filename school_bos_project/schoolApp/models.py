@@ -5,9 +5,12 @@ from multiselectfield import MultiSelectField
 from django.contrib.auth.models import User
 from rest_framework.validators import ValidationError
 from django.core.validators import MinValueValidator
+import os
+from django.contrib.auth import get_user_model
     # Admission inquiry form (student + parent details)
     # AdmissionInquiry form for new user who doen`t have accout in database
     
+# User = get_user_model()
 class Subject(models.Model):
     subject = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)  # e.g., MATH101
@@ -335,3 +338,20 @@ class ReportCard(models.Model):
     
     def __str__(self):
         return f"Report Card - {self.student} - {self.exam}"
+    
+class TimeTable(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to='uploadTimeTables/')
+    file_type = models.CharField(max_length=20, blank=True)  # auto-filled later
+    uploaded_by = models.ForeignKey('Account.TeacherProfile', on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_on = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            _, ext = os.path.splitext(self.file.name)
+            self.file_type = ext.lower().replace('.', '') or 'other'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title    

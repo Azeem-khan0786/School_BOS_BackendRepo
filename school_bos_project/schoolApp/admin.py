@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from schoolApp.models import AdmissionInquiry,Attendance,Subject, ClassRoom, Class,Homework,Subject,FeeModel,FAQ,Book,BookIssue,Exam,ExamSubject,ReportCard,Grade
+from schoolApp.models import AdmissionInquiry,Attendance,Subject, ClassRoom, Class,Homework,Subject,FeeModel,FAQ,Book,BookIssue,Exam,ExamSubject,ReportCard,Grade,TimeTable
 
 
 @admin.register(Subject)
@@ -118,3 +118,19 @@ class ReportCardAdmin(admin.ModelAdmin):
     search_fields = ['student__name', 'exam__name']
     list_per_page = 20
     readonly_fields = ['overall_percentage', 'overall_grade']
+
+
+@admin.register(TimeTable)
+class TimeTableAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'file_type', 'uploaded_by', 'uploaded_on')
+    list_filter = ('file_type', 'uploaded_by', 'uploaded_on')
+    search_fields = ('title', 'description', 'file')
+    readonly_fields = ('file_type', 'uploaded_on')  #uploaded_by
+    ordering = ('-uploaded_on',)
+
+
+    # def save_model(self, request, obj, form, change):
+    #     # Automatically set uploaded_by if not manually set
+    #     if not obj.uploaded_by:
+    #         obj.uploaded_by = request.user
+    #     super().save_model(request, obj, form, change)

@@ -34,6 +34,13 @@ urlpatterns = [
     path('issue/', views.IssueBookView.as_view(), name='issue-book'),                # POST
     path('return/<int:pk>/', views.ReturnBookView.as_view(), name='return-book'),    # PUT
     path('issued/', views.IssuedBookListView.as_view(), name='issued-books'),        # GET
+
+    # TimeTable
+    path('timetables/', views.TimeTableListAPIView.as_view(), name='timetable-list'),
+    path('timetables/create/', views.TimeTableCreateAPIView.as_view(), name='timetable-create'),
+    path('timetables/<int:pk>/', views.TimeTableDetailAPIView.as_view(), name='timetable-detail'),
+    path('timetables/<int:pk>/update/',views.TimeTableUpdateAPIView.as_view(), name='timetable-update'),
+    path('timetables/<int:pk>/delete/', views.TimeTableDeleteAPIView.as_view(), name='timetable-delete'),
 ]
 
 # ✅ Combine with router URLs

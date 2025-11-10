@@ -7,29 +7,6 @@ import uuid
 from django.db.models import Max
 
 User = get_user_model()
-# @receiver(post_save, sender=User)
-# def create_related_profiles(sender, instance, created, **kwargs):
-    # if created:
-    #     # Profile.objects.create(user=instance)
-
-    #     # 🔒 skip for superusers or staff
-    #     if instance.is_superuser or instance.is_staff:
-    #         return
-
-
-    #     if instance.role == "student":
-    #         StudentProfile.objects.create(
-    #             student_name=instance.username,
-    #             email=instance.email,
-    #             enrollement_number=f"ENR{instance.id}"
-    #         )
-    #     elif instance.role == "teacher":
-    #         TeacherProfile.objects.create(user=instance, staff_id=f"TCH{instance.id}", department="General")
-    #     elif instance.role == "parent":
-    #         ParentProfile.objects.create(user=instance, relation="guardian")
-    #     elif instance.role == "staff":
-    #         StaffProfile.objects.create(user=instance, staff_id=f"STF{instance.id}", designation="Staff")
-
 @receiver(pre_save, sender=StudentProfile)
 def generate_enrollment_number(sender, instance, **kwargs):
        
@@ -81,3 +58,47 @@ def generate_staff_id(sender, instance, **kwargs):
         
         # Format as STF1001, STF1002, etc.
         instance.staff_id = f"STF{next_num}"        
+
+# ------------------------------
+# StudentProfile → User
+# ------------------------------
+@receiver(post_save, sender=StudentProfile)
+def create_user_for_student(sender, instance, created, **kwargs):
+    if created:
+        if not User.objects.filter(email=instance.email).exists():
+            user = User.objects.create(
+                username=instance.student_name,   # or use instance.email
+                email=instance.email,
+                role="student",
+                phone_number=instance.phone_number,
+                gender=instance.gender,
+                dob=instance.dob,
+                address=instance.address,
+                profile_picture=instance.profile_picture,
+                language_preference=instance.language_preference,
+                is_active=True,
+            )
+            user.set_password("student@123")  # default password (optional)
+            user.save()
+
+# ------------------------------
+# TeacherProfile → User
+# ------------------------------
+@receiver(post_save, sender=TeacherProfile)
+def create_user_for_teacher(sender, instance, created, **kwargs):
+    if created:
+        if not User.objects.filter(email=instance.email).exists():
+            user = User.objects.create(
+                username=instance.teacher_name,   # or use instance.email
+                email=instance.email,
+                role="teacher",
+                phone_number=instance.phone_number,
+                gender=instance.gender,
+                dob=instance.dob,
+                address=instance.address,
+                profile_picture=instance.profile_picture,
+                language_preference=instance.language_preference,
+                is_active=True,
+            )
+            user.set_password("teacher@123")  # default password (optional)
+            user.save()

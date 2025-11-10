@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate,get_user_model
 
 # from Account.models import User, Profile ,StudentProfile,TeacherProfile,StaffProfile,ParentProfile
 
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard
+from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard,TimeTable
 User  =  get_user_model()
 
 
@@ -239,3 +239,15 @@ class ReportCardSerializer(serializers.ModelSerializer):
     def get_grades(self, obj):
         grades = Grade.objects.filter(student=obj.student, exam=obj.exam)
         return GradeSerializer(grades, many=True).data
+    
+    #  TimeTableSerializer
+class TimeTableSerializer(serializers.ModelSerializer):
+    uploaded_by_name = serializers.CharField(source='uploaded_by.username', read_only=True)
+
+    class Meta:
+        model = TimeTable
+        fields = [
+            'id', 'title', 'description', 'file',
+            'file_type', 'uploaded_by_name', 'uploaded_on'
+        ]
+        read_only_fields = ['file_type', 'uploaded_by_name', 'uploaded_on']    
