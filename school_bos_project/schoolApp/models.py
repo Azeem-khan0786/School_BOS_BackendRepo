@@ -50,7 +50,7 @@ class Class(models.Model):
     class_name = models.CharField(max_length=50)               # e.g., Class X
     section = models.CharField(max_length=10, blank=True, null=True)  # e.g., A, B
     subjects = models.ManyToManyField(Subject, related_name='classes')
-    classrooms = models.ManyToManyField(ClassRoom, related_name='classes')
+    # classrooms = models.ManyToManyField(ClassRoom, related_name='classes')
     student_count = models.PositiveIntegerField(default=0)
     max_seats = models.PositiveIntegerField(default=40)
 
@@ -116,16 +116,21 @@ class AdmissionInquiry(models.Model):
 
     def __str__(self):
         return f"{self.student_name} - {self.class_name}"
-    #    Attendance alerts to parents    
+    #    Attendance alerts to parents
+    
 class Attendance(models.Model):
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=10, choices=[('Present', 'Present'), ('Absent', 'Absent')])
+    selected_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='attendance_records',default=None)
+    student = models.ForeignKey('Account.StudentProfile', on_delete=models.CASCADE, related_name='attendance_records')
+    date = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=[('Present', 'Present'), ('Absent', 'Absent'), ('Leave', 'Leave')])
     remark = models.TextField(blank=True, null=True)
 
+    class Meta:
+        unique_together = ('student', 'date')  # Prevent duplicate entries
+
     def __str__(self):
-        return f"{self.student.username} - {self.date} ({self.status})"  
-      
+        return f"{self.student.user.username} - {self.date} ({self.status})"
+
 # Basic notices ( Time table ,holidays, PTM, events)    
 class Notice(models.Model):
     title = models.CharField(max_length=200)

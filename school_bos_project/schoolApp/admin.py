@@ -23,7 +23,7 @@ class ClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'class_name', 'section', 'student_count', 'max_seats')
     list_filter = ('section',)
     search_fields = ('name',)
-    filter_horizontal = ('subjects', 'classrooms')  # Nice UI for M2M fields
+    filter_horizontal = ('subjects',)  # Nice UI for M2M fields
 
     # ✅ Extra validation in admin (same as serializer)
     def save_model(self, request, obj, form, change):

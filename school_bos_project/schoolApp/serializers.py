@@ -14,23 +14,12 @@ class AdmissionInquirySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AttendanceSerializer(serializers.ModelSerializer):
-    student_name = serializers.CharField(write_only=True)
+    student_name = serializers.CharField(source='student.user.username', read_only=True)
+    class_name = serializers.CharField(source='class_room.class_name', read_only=True)
 
     class Meta:
         model = Attendance
-        fields = ['id', 'student', 'student_name', 'status', 'date']
-        extra_kwargs = {'student': {'read_only': True}}
-
-    def create(self, validated_data):
-        student_name = validated_data.pop('student_name')
-        User = get_user_model()
-        student = User.objects.filter(username__iexact=student_name).first()
-
-        if not student:
-            raise serializers.ValidationError({"student_name": "Student not found"})
-        
-        attendance = Attendance.objects.create(student=student, **validated_data)
-        return attendance
+        fields = ['id', 'selected_class', 'student', 'student_name', 'date', 'status', 'remark']
     
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:

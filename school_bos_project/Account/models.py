@@ -63,6 +63,7 @@ class StudentProfile(models.Model):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES,blank=True, null=True,default=None)
     dob = models.DateField(blank=True, null=True)
+    age = models.CharField(max_length=2, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to="profiles/", blank=True, null=True)
     language_preference = models.CharField(max_length=50, default="English")
@@ -74,11 +75,11 @@ class StudentProfile(models.Model):
     section_name = models.CharField(max_length=10)
     parent_name = models.CharField(max_length=100, blank=True, null=True)
     parent_contact = models.CharField(max_length=15, blank=True, null=True)
-
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"Student {self.student_name} - {self.class_name}{self.section_name}"
+    #uploadaddhr, uploadtc, lastsch_resul,
 
 
 # -------------------
@@ -100,16 +101,16 @@ class TeacherProfile(models.Model):
     classes_handled = models.CharField(max_length=100, blank=True, null=True)  # e.g., "9th, 10th"
     experience = models.CharField(max_length=50, blank=True, null=True)  # e.g., "5 years"
     qualification = models.CharField(max_length=200, blank=True, null=True)
-    salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    # salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     
     # ---- Contact Information ----
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    # phone_number = models.CharField(max_length=15, blank=True, null=True)
     contact = models.CharField(max_length=15, blank=True, null=True)  # Additional contact
     address = models.TextField(blank=True, null=True)
     language_preference = models.CharField(max_length=50, default="English")
     
     # ---- Documents ----
-    aadhaar_number = models.CharField(max_length=12, unique=True,blank=True)
+    # aadhaar_number = models.CharField(max_length=12, unique=True,blank=True)
     aadhaar_doc = models.FileField(upload_to="teacher_docs/", blank=True, null=True)
     experience_doc = models.FileField(upload_to="teacher_docs/", blank=True, null=True)
     

@@ -11,7 +11,7 @@ from Account.models import StaffProfile,TeacherProfile,ParentProfile,StudentProf
 from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer,TimeTableSerializer
 from Account.serializers import StudentProfileSerializer
 from django.contrib.auth import get_user_model
-from datetime import date
+from datetime import date,timezone
 from rest_framework.response import Response
 from schoolApp.permissions import IsAdminOrTeacher 
 from django.views.decorators.csrf import csrf_exempt
@@ -159,21 +159,37 @@ def approve_inquiry(inquiry_id):
     inquiry.save()
     return student_user
 
-class AttendanceView(generics.ListCreateAPIView):
-    queryset = Attendance.objects.all().order_by('-date')
-    serializer_class = AttendanceSerializer
-    permission_classes = [IsAuthenticated]
+# Get all students of a class
+class ClassStudentsView(APIView):
+    def get(self, request, class_id):
+        students = StudentProfile.objects.filter(class_room_id=class_id)
+        data = [
+            {"id": s.id, "name": s.user.username, "enrollment_no": s.enrollment_no}
+            for s in students
+        ]
+        return Response(data)
 
-    def perform_create(self, serializer):
-        # Optionally: check if attendance for this student/date already exists
-        student = self.request.data.get('student')
-        student_name = self.request.data.get('student_name')
-        date = serializer.validated_data.get('date')
 
-        if Attendance.objects.filter(student__id=student, date=date).exists():
-            raise serializers.ValidationError({"detail": "Attendance already marked for this date."})
+# Mark attendance for all students in class
+class MarkAttendanceView(APIView):
+    def post(self, request):
+        class_room_id = request.data.get('class_room')
+        records = request.data.get('records', [])
+        date = timezone.now().date()
 
-        serializer.save()
+        responses = []
+        for record in records:
+            student_id = record.get('student')
+            status_value = record.get('status')
+
+            attendance, created = Attendance.objects.update_or_create(
+                student_id=student_id,
+                date=date,
+                defaults={'class_room_id': class_room_id, 'status': status_value}
+            )
+            responses.append(AttendanceSerializer(attendance).data)
+
+        return Response({"message": "Attendance marked successfully", "data": responses}, status=status.HTTP_201_CREATED)
 
 class NoticeView(generics.ListCreateAPIView):
     queryset = Notice.objects.all().order_by('-date')
