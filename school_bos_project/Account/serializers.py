@@ -20,7 +20,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('confirm_password')  # remove confirm password
+        validated_data.pop('confirm_password')
+
+        if User.objects.filter(email=validated_data['email']).exists():
+            raise serializers.ValidationError({"email": "Email already exists."})
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -31,20 +35,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     
 # Login Serializer
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
     def validate(self, data):
-        username = data.get("username")
+        email = data.get("email")
         password = data.get("password")
 
-        user = authenticate(username=username, password=password)
+        user = authenticate(email=email, password=password)
         if not user:
-            raise serializers.ValidationError("Invalid username or password.")
+            raise serializers.ValidationError("Invalid email or password.")
         if not user.is_active:
             raise serializers.ValidationError("User account is disabled.")
         data["user"] = user
         return data
+
     
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)

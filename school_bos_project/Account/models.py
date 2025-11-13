@@ -21,35 +21,23 @@ class User(AbstractUser):
         ('parent', 'Parent'),
         ('staff', 'Staff'),
     )
+    username = models.CharField(max_length=150, unique=False, blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     email = models.EmailField(unique=True)
     is_active = models.BooleanField(default=True)
-    # ---- Moved from Profile ----
     phone_number = models.CharField(max_length=15, blank=True, null=True)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES,blank=True, null=True,default=None)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, null=True, default=None)
     dob = models.DateField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to="profiles/", blank=True, null=True)
     language_preference = models.CharField(max_length=50, default="English")
 
-    # Fix reverse accessor conflicts
-    groups = models.ManyToManyField(
-        Group,
-        related_name="custom_user_set",
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups',
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        related_name="custom_user_permissions_set",
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions',
-    )
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']  # keeps username field but not used for login
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return f"{self.email} ({self.role})"
+
 
 # -------------------
 # Student Profile
