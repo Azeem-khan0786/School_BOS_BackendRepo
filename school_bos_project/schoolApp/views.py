@@ -227,7 +227,7 @@ class HomeworkViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(teacher=self.request.user)
+        serializer.save(Assigned_By_teacher=self.request.user)
 
 class AdminDashboard(APIView):
     # permission_classes = [IsAdminUser]     
@@ -345,7 +345,7 @@ class IsAdminUserOrReadOnly(BasePermission):
 
 # 🔹 CREATE (Upload TimeTable)
 class TimeTableCreateAPIView(APIView):
-    permission_classes = [IsAdminUserOrReadOnly]
+    # permission_classes = [IsAdminUserOrReadOnly]
 
     def post(self, request):
         serializer = TimeTableSerializer(data=request.data)
@@ -381,7 +381,7 @@ class TimeTableDetailAPIView(APIView):
 
 # 🔹 UPDATE (Full update)
 class TimeTableUpdateAPIView(APIView):
-    permission_classes = [IsAdminUserOrReadOnly]
+    # permission_classes = [IsAdminUserOrReadOnly]
 
     def put(self, request, pk):
         try:
@@ -398,7 +398,7 @@ class TimeTableUpdateAPIView(APIView):
 
 # 🔹 DELETE (Remove TimeTable)
 class TimeTableDeleteAPIView(APIView):
-    permission_classes = [IsAdminUserOrReadOnly]
+    # permission_classes = [IsAdminUserOrReadOnly]
 
     def delete(self, request, pk):
         try:

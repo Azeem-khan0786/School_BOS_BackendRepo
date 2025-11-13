@@ -1,8 +1,8 @@
 from django.contrib import admin
 
 # Register your models here.
-from schoolApp.models import AdmissionInquiry,Attendance,Subject, ClassRoom, Class,Homework,Subject,FeeModel,FAQ,Book,BookIssue,Exam,ExamSubject,ReportCard,Grade,TimeTable
-
+from schoolApp.models import AdmissionInquiry,Attendance,Subject, ClassRoom, Class,Homework,Subject,FeeModel,FAQ,Book,BookIssue,Exam,ExamSubject,ReportCard,Grade,TimeTable,NoticeModel
+from Account.models import StudentProfile
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
@@ -34,7 +34,6 @@ class ClassAdmin(admin.ModelAdmin):
 
 admin.site.register(AdmissionInquiry)
 admin.site.register(Attendance)
-admin.site.register(Homework)
 admin.site.register(FeeModel)
 admin.site.register(FAQ)
 
@@ -136,13 +135,13 @@ class TimeTableAdmin(admin.ModelAdmin):
     #     super().save_model(request, obj, form, change)
 
 
-# @admin.register(Notice)
-# class NoticeAdmin(admin.ModelAdmin):
-#     list_display = ['title', 'target', 'class_name', 'applicable_date', 'posted_by', 'is_published', 'created_at']
-#     list_filter = ['target', 'class_name', 'is_published', 'created_at']
-#     search_fields = ['title', 'description', 'specific_students']
-#     readonly_fields = ['created_at', 'updated_at']
-#     date_hierarchy = 'created_at'
+@admin.register(NoticeModel)
+class NoticeAdmin(admin.ModelAdmin):
+    list_display = ['title', 'target', 'class_name', 'applicable_date', 'posted_by', 'is_published', 'created_at']
+    list_filter = ['target', 'class_name', 'is_published', 'created_at']
+    search_fields = ['title', 'description', 'specific_students']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'
     
 #     fieldsets = (
 #         ('Basic Information', {
@@ -159,3 +158,15 @@ class TimeTableAdmin(admin.ModelAdmin):
 #             'classes': ('collapse',)
 #         }),
 #     )    
+@admin.register(Homework)
+class HomeworkAdmin(admin.ModelAdmin):
+    list_display = ['id', 'class_name']
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "students":
+            class_id = request.GET.get('class_name')  # Works when class is selected first
+            if class_id:
+                kwargs["queryset"] = StudentProfile.objects.filter(class_name_id=class_id)
+            else:
+                kwargs["queryset"] = StudentProfile.objects.none()
+        return super().formfield_for_manytomany(db_field, request, **kwargs)

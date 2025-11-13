@@ -139,8 +139,10 @@ User = get_user_model()
 
 class NoticeModel(models.Model):
     TARGET_CHOICES = [
-        ('students', 'Students'),
-        ('class', 'Class'),
+        ('student', 'Student'),
+        ('classes', 'classes'),
+        ('Teachers', 'Teachers'),
+
     ]
 
     # --- Target info ---
@@ -180,7 +182,7 @@ class NoticeModel(models.Model):
     is_published = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField()
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -226,11 +228,11 @@ class Homework(models.Model):
         ('student', 'Specific Student(s)'),
     ]
 
-    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='homeworks')
+    Assigned_By_teacher = models.ForeignKey('Account.TeacherProfile', on_delete=models.CASCADE, related_name='homeworks',default=None)
     class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='homeworks', blank=True, null=True)
-    students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='assigned_homeworks', blank=True)
+    students = models.ManyToManyField('Account.StudentProfile', related_name='assigned_homeworks_to', blank=True)
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(max_length=1025)
     subject = models.CharField(max_length=100)
     due_date = models.DateField()
     file = models.FileField(upload_to='homework_files/', blank=True, null=True)
