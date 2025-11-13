@@ -6,9 +6,9 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAdminUser,IsAuthenticated,AllowAny,SAFE_METHODS,BasePermission
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue,TimeTable
+from schoolApp.models import AdmissionInquiry,Attendance,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue,TimeTable
 from Account.models import StaffProfile,TeacherProfile,ParentProfile,StudentProfile
-from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer,TimeTableSerializer
+from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer,TimeTableSerializer
 from Account.serializers import StudentProfileSerializer
 from django.contrib.auth import get_user_model
 from datetime import date,timezone
@@ -191,9 +191,10 @@ class MarkAttendanceView(APIView):
 
         return Response({"message": "Attendance marked successfully", "data": responses}, status=status.HTTP_201_CREATED)
 
-class NoticeView(generics.ListCreateAPIView):
-    queryset = Notice.objects.all().order_by('-date')
-    serializer_class = NoticeSerializer        
+# class NoticeView(generics.ListCreateAPIView):
+    # queryset = Notice.objects.all().order_by('-created_at')
+    # serializer_class = NoticeSerializer     
+    pass   
 
 class FeeView(generics.ListCreateAPIView):
     queryset = FeeModel.objects.all().order_by('due_date')

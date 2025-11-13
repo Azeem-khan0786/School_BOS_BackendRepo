@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate,get_user_model
 
 # from Account.models import User, Profile ,StudentProfile,TeacherProfile,StaffProfile,ParentProfile
 
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard,TimeTable
+from schoolApp.models import AdmissionInquiry,Attendance,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard,TimeTable
 User  =  get_user_model()
 
 
@@ -60,10 +60,10 @@ class ClassSerializer(serializers.ModelSerializer):
 
         return data
         
-class NoticeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Notice
-        fields = '__all__'
+# class NoticeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Notice
+#         fields = '__all__'
 class FeeSerializer(serializers.ModelSerializer):
     class Meta:
          model = FeeModel   

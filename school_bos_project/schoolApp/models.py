@@ -4,13 +4,12 @@ from django.utils import timezone
 from multiselectfield import MultiSelectField
 from django.contrib.auth.models import User
 from rest_framework.validators import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator,MaxValueValidator
 import os
 from django.contrib.auth import get_user_model
-    # Admission inquiry form (student + parent details)
-    # AdmissionInquiry form for new user who doen`t have accout in database
+
+User = get_user_model()
     
-# User = get_user_model()
 class Subject(models.Model):
     subject = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True, blank=True, null=True)  # e.g., MATH101
@@ -132,19 +131,75 @@ class Attendance(models.Model):
         return f"{self.student.user.username} - {self.date} ({self.status})"
 
 # Basic notices ( Time table ,holidays, PTM, events)    
-class Notice(models.Model):
+# from django.contrib.auth import get_user_model
+
+# Dynamically get your custom User model
+User = get_user_model()
+
+
+class NoticeModel(models.Model):
+    TARGET_CHOICES = [
+        ('students', 'Students'),
+        ('class', 'Class'),
+    ]
+
+    # --- Target info ---
+    target = models.CharField(
+        max_length=20,
+        choices=TARGET_CHOICES,
+        default='students',
+        help_text="Select who this notice is for"
+    )
+    class_name = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Specify class if applicable (leave empty for all classes)"
+    )
+
+    # --- Notice details ---
     title = models.CharField(max_length=200)
-    message = models.TextField()
-    audience_type = MultiSelectField(max_length=50, choices=[
-        ('All', 'All'),
-        ('Parents', 'Parents'),
-        ('Students', 'Students'),
-        ('Teachers', 'Teachers')
-    ])
-    date = models.DateField(auto_now_add=True)
+    description = models.TextField()
+    applicable_date = models.DateField(default=timezone.now)
+
+    # --- Specific students (optional) ---
+    specific_students = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma-separated names or admission numbers if notice is for specific students"
+    )
+
+    # --- Meta and control fields ---
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # ✅ safer than get_user_model() at top level
+        on_delete=models.CASCADE,
+        limit_choices_to={'is_staff': True},
+        related_name="notices_posted",
+        default=None
+    )
+    is_published = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Notice"
+        verbose_name_plural = "Notices"
 
     def __str__(self):
-        return self.title    
+        return f"{self.title} ({self.applicable_date})"
+
+    # --- Helper methods ---
+    def get_specific_students_list(self):
+        """Convert comma-separated string to list"""
+        if self.specific_students:
+            return [s.strip() for s in self.specific_students.split(',') if s.strip()]
+        return []
+
+    def is_for_all_students(self):
+        """Check if notice applies to all students"""
+        return not self.specific_students and not self.class_name   
 
 # Fee due reminders
 class FeeModel(models.Model):

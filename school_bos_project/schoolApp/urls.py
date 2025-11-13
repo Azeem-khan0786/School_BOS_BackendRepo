@@ -28,7 +28,7 @@ urlpatterns = [
 
     # path('attendence', views.AttendanceView.as_view(), name='attendance'),
     path('approve_inquiry', views.approve_inquiry, name='approve_inquiry'),
-    path('notice', views.NoticeView.as_view(), name='notice'),
+    # path('notice', views.NoticeView.as_view(), name='notice'),
     path('fee', views.FeeView.as_view(), name='fee'),
     path('faq', views.FAQAutoReplyView.as_view(), name='faq-auto-reply'),
     path('admin_dashboard', views.AdminDashboard.as_view(), name='admin_dashboard'),

@@ -13,10 +13,10 @@ def generate_enrollment_number(sender, instance, **kwargs):
     """
     Generate sequential enrollment numbers: ENR000001, ENR000002, etc.
     """
-    if not instance.enrollement_no:
+    if not instance.enrollment_no:
         # Get the highest current enrollment number
         max_enrollment = StudentProfile.objects.aggregate(
-            max_num=Max('enrollement_no')
+            max_num=Max('enrollment_no')
         )['max_num']
         
         if max_enrollment and max_enrollment.startswith('ENR'):
@@ -30,7 +30,7 @@ def generate_enrollment_number(sender, instance, **kwargs):
             next_num = 1
         
         # Format as ENR000001, ENR000002, etc.
-        instance.enrollement_no = f"ENR{next_num:06d}"            
+        instance.enrollment_no = f"ENR{next_num:06d}"            
 
 # Signal to generate sequential staff ID
 @receiver(pre_save, sender=TeacherProfile)
@@ -92,7 +92,6 @@ def create_user_for_teacher(sender, instance, created, **kwargs):
                 username=instance.teacher_name,   # or use instance.email
                 email=instance.email,
                 role="teacher",
-                phone_number=instance.phone_number,
                 gender=instance.gender,
                 dob=instance.dob,
                 address=instance.address,

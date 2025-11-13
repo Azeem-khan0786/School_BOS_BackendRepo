@@ -4,7 +4,6 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from schoolApp.models import  Subject
 
 GENDER_CHOICES = [
         ("Male", "Male"),
@@ -69,7 +68,13 @@ class StudentProfile(models.Model):
     language_preference = models.CharField(max_length=50, default="English")
 
     # ---- Student-specific fields ----
-    enrollement_no = models.CharField(max_length=20, unique=True, editable=False,blank=True, null=True)
+    enrollment_no = models.CharField(
+        max_length=20,
+        unique=True,
+        editable=False,
+        blank=True,
+        null=True
+    )
     admission_date = models.DateField(default=timezone.now)
     class_name = models.ForeignKey("schoolApp.Class",  on_delete=models.CASCADE)
     section_name = models.CharField(max_length=10)

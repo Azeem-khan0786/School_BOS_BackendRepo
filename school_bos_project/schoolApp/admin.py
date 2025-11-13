@@ -134,3 +134,28 @@ class TimeTableAdmin(admin.ModelAdmin):
     #     if not obj.uploaded_by:
     #         obj.uploaded_by = request.user
     #     super().save_model(request, obj, form, change)
+
+
+# @admin.register(Notice)
+# class NoticeAdmin(admin.ModelAdmin):
+#     list_display = ['title', 'target', 'class_name', 'applicable_date', 'posted_by', 'is_published', 'created_at']
+#     list_filter = ['target', 'class_name', 'is_published', 'created_at']
+#     search_fields = ['title', 'description', 'specific_students']
+#     readonly_fields = ['created_at', 'updated_at']
+#     date_hierarchy = 'created_at'
+    
+#     fieldsets = (
+#         ('Basic Information', {
+#             'fields': ('title', 'description', 'applicable_date')
+#         }),
+#         ('Targeting', {
+#             'fields': ('target', 'class_name', 'specific_students')
+#         }),
+#         ('Publication', {
+#             'fields': ('posted_by', 'is_published')
+#         }),
+#         ('Timestamps', {
+#             'fields': ('created_at', 'updated_at'),
+#             'classes': ('collapse',)
+#         }),
+#     )    

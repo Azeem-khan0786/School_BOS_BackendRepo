@@ -10,7 +10,7 @@ class UserAdmin(admin.ModelAdmin):
 admin.site.register(User,UserAdmin)
 
 class StudentAdmin(admin.ModelAdmin):
-         list_display = ('id','student_name','enrollement_no')
+         list_display = ('id','student_name',)
 admin.site.register(StudentProfile,StudentAdmin)
 
 

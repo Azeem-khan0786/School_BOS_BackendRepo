@@ -1,5 +1,6 @@
 # from django.shortcuts import render
-# from django.http import HttpResponse
+from django.http import JsonResponse,HttpResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import generics,status, filters
@@ -79,62 +80,95 @@ class ChangePasswordView(generics.UpdateAPIView):
         serializer.save()
         return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
         
-# @method_decorator(csrf_exempt,name='dispatch')
-# class StudentProfileView(APIView):
-#     authentication_classes = []        # Disable SessionAuthentication (CSRF)
-#     permission_classes = [AllowAny]     # Allow public access for now
-#     def get(self, request, pk):
-#         try:
-#             profile = StudentProfile.objects.get(pk=pk)
-#             serializer = StudentProfileSerializer(profile)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         except StudentProfile.DoesNotExist:
-#             return Response(
-#                 {"error": "Profile not found"},   # no serializer here
-#                 status=status.HTTP_404_NOT_FOUND
-#             )
-        
-#     def put(self,request,pk):
-#         try:
-#             profile = StudentProfile.objects.get(pk=pk)
-#             serializer = StudentProfileSerializer(profile,data = request.data)
-#             if serializer.is_valid():
-#                 serializer.save()
-#                 return Response(serializer.data,status=status.HTTP_200_OK)
-#         except StudentProfile.DoesNotExist:
-#             return Response(status=status.HTTP_404_NOT_FOUND)
-        
-#     def delete(self,request,pk):
-#         profile = StudentProfile.objects.get(pk=pk)
-#         profile.delete()
-#         return Response("Student Profile Deleted")
+# ---------- CREATE ----------
+@method_decorator(csrf_exempt,name='dispatch')
+# permission_classes = [AllowAny] 
+class StudentCreateAPIView(APIView):
+    permission_classes = [AllowAny] 
+    def post(self, request):
+        serializer = StudentProfileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()  # Enrollment number auto-generated via signal
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------- READ ALL (LIST) ----------
+class StudentListAPIView(APIView):
+    def get(self, request):
+        students = StudentProfile.objects.all().select_related('class_name')
+
+        # Optional filtering, searching, ordering via query params
+        class_name = request.query_params.get('class_name')
+        section_name = request.query_params.get('section_name')
+        gender = request.query_params.get('gender')
+        is_active = request.query_params.get('is_active')
+        search = request.query_params.get('search')
+        ordering = request.query_params.get('ordering', '-created_at')
+
+        if class_name:
+            students = students.filter(class_name=class_name)
+        if section_name:
+            students = students.filter(section_name=section_name)
+        if gender:
+            students = students.filter(gender=gender)
+        if is_active:
+            students = students.filter(is_active=is_active)
+        if search:
+            students = students.filter(
+                student_name__icontains=search
+            ) | students.filter(
+                email__icontains=search
+            ) | students.filter(
+                enrollement_no__icontains=search
+            ) | students.filter(
+                parent_name__icontains=search
+            )
+
+        students = students.order_by(ordering)
+        serializer = StudentProfileSerializer(students, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ---------- READ SINGLE (DETAIL) ----------
+class StudentDetailAPIView(APIView):
+    def get(self, request, pk):
+        student = get_object_or_404(StudentProfile.objects.select_related('class_name'), pk=pk)
+        serializer = StudentProfileSerializer(student)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ---------- UPDATE ----------
+class StudentUpdateAPIView(APIView):
+    def put(self, request, pk):
+        student = get_object_or_404(StudentProfile, pk=pk)
+        serializer = StudentProfileSerializer(student, data=request.data)
+        if serializer.is_valid():
+            # Prevent updating read-only fields
+            serializer.validated_data.pop('enrollement_no', None)
+            serializer.validated_data.pop('created_at', None)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        student = get_object_or_404(StudentProfile, pk=pk)
+        serializer = StudentProfileSerializer(student, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.validated_data.pop('enrollement_no', None)
+            serializer.validated_data.pop('created_at', None)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------- DELETE ----------
+class StudentDeleteAPIView(APIView):
+    def delete(self, request, pk):
+        student = get_object_or_404(StudentProfile, pk=pk)
+        student.delete()
+        return Response({"message": "Student deleted successfully"}, status=status.HTTP_204_NO_CONTENT)        
     
-
-class StudentListCreateView(generics.ListCreateAPIView):
-    queryset = StudentProfile.objects.all().select_related('class_name')
-    serializer_class = StudentProfileSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['student_name', 'email', 'enrollement_no', 'parent_name']
-    filterset_fields = ['class_name', 'section_name', 'gender', 'is_active']
-    ordering_fields = ['student_name', 'admission_date', 'created_at']
-    ordering = ['-created_at']
-
-    def perform_create(self, serializer):
-        # Enrollment number will be auto-generated by signal
-        serializer.save()
-
-class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = StudentProfile.objects.all().select_related('class_name')
-    serializer_class = StudentProfileSerializer
-
-    def perform_update(self, serializer):
-        # Prevent updating read-only fields
-        if 'enrollement_no' in serializer.validated_data:
-            del serializer.validated_data['enrollement_no']
-        if 'created_at' in serializer.validated_data:
-            del serializer.validated_data['created_at']
-        serializer.save()
-
 
 class StudentSearchView(generics.ListAPIView):
     serializer_class = StudentProfileSerializer
@@ -151,16 +185,7 @@ class StudentSearchView(generics.ListAPIView):
             
         return queryset
     
-class TeacherListCreateView(generics.ListCreateAPIView):
-    queryset = TeacherProfile.objects.all().prefetch_related('subjects')
-    serializer_class = TeacherProfileSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['teacher_name', 'email', 'staff_id', 'department', 'specialization', 'aadhaar_number']
-    filterset_fields = ['department', 'gender', 'is_active', 'specialization']
-    ordering_fields = ['teacher_name', 'joining_date', 'experience', 'created_at']
-    ordering = ['-created_at']
 
-class TeacherDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = TeacherProfile.objects.all().prefetch_related('subjects')
     serializer_class = TeacherProfileSerializer
 
@@ -187,6 +212,94 @@ class TeacherSearchView(generics.ListAPIView):
             
         return queryset
 
+# ---------- CREATE ----------
+class TeacherCreateAPIView(APIView):
+    def post(self, request):
+        serializer = TeacherProfileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------- LIST (READ ALL) ----------
+class TeacherListAPIView(APIView):
+    def get(self, request):
+        teachers = TeacherProfile.objects.all().prefetch_related('subjects')
+
+        # Optional filters
+        department = request.query_params.get('department')
+        gender = request.query_params.get('gender')
+        specialization = request.query_params.get('specialization')
+        is_active = request.query_params.get('is_active')
+        search = request.query_params.get('search')
+        ordering = request.query_params.get('ordering', '-joining_date')
+
+        # Apply filters
+        if department:
+            teachers = teachers.filter(department=department)
+        if gender:
+            teachers = teachers.filter(gender=gender)
+        if specialization:
+            teachers = teachers.filter(specialization=specialization)
+        if is_active:
+            teachers = teachers.filter(is_active=is_active)
+        if search:
+            teachers = teachers.filter(
+                teacher_name__icontains=search
+            ) | teachers.filter(
+                email__icontains=search
+            ) | teachers.filter(
+                staff_id__icontains=search
+            ) | teachers.filter(
+                department__icontains=search
+            ) | teachers.filter(
+                specialization__icontains=search
+            )
+
+        teachers = teachers.order_by(ordering)
+        serializer = TeacherProfileSerializer(teachers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ---------- DETAIL (READ SINGLE) ----------
+class TeacherDetailAPIView(APIView):
+    def get(self, request, pk):
+        teacher = get_object_or_404(TeacherProfile.objects.prefetch_related('subjects'), pk=pk)
+        serializer = TeacherProfileSerializer(teacher)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ---------- UPDATE ----------
+class TeacherUpdateAPIView(APIView):
+    def put(self, request, pk):
+        teacher = get_object_or_404(TeacherProfile, pk=pk)
+        serializer = TeacherProfileSerializer(teacher, data=request.data)
+        if serializer.is_valid():
+            # Prevent updating read-only fields
+            for field in ['staff_id', 'created_at', 'updated_at']:
+                serializer.validated_data.pop(field, None)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        teacher = get_object_or_404(TeacherProfile, pk=pk)
+        serializer = TeacherProfileSerializer(teacher, data=request.data, partial=True)
+        if serializer.is_valid():
+            for field in ['staff_id', 'created_at', 'updated_at']:
+                serializer.validated_data.pop(field, None)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------- DELETE ----------
+class TeacherDeleteAPIView(APIView):
+    def delete(self, request, pk):
+        teacher = get_object_or_404(TeacherProfile, pk=pk)
+        teacher.delete()
+        return Response({"message": "Teacher deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 @method_decorator(csrf_exempt,name='dispatch')
 class ParentProfileView(APIView):
