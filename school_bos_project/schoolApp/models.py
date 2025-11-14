@@ -4,9 +4,11 @@ from django.utils import timezone
 from multiselectfield import MultiSelectField
 from django.contrib.auth.models import User
 from rest_framework.validators import ValidationError
-from django.core.validators import MinValueValidator
-    # Admission inquiry form (student + parent details)
-    # AdmissionInquiry form for new user who doen`t have accout in database
+from django.core.validators import MinValueValidator,MaxValueValidator
+import os
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
     
 class Subject(models.Model):
     subject = models.CharField(max_length=100, unique=True)
@@ -47,7 +49,7 @@ class Class(models.Model):
     class_name = models.CharField(max_length=50)               # e.g., Class X
     section = models.CharField(max_length=10, blank=True, null=True)  # e.g., A, B
     subjects = models.ManyToManyField(Subject, related_name='classes')
-    classrooms = models.ManyToManyField(ClassRoom, related_name='classes')
+    # classrooms = models.ManyToManyField(ClassRoom, related_name='classes')
     student_count = models.PositiveIntegerField(default=0)
     max_seats = models.PositiveIntegerField(default=40)
 
@@ -113,30 +115,93 @@ class AdmissionInquiry(models.Model):
 
     def __str__(self):
         return f"{self.student_name} - {self.class_name}"
-    #    Attendance alerts to parents    
+    #    Attendance alerts to parents
+    
 class Attendance(models.Model):
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=10, choices=[('Present', 'Present'), ('Absent', 'Absent')])
+    selected_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='attendance_records',default=None)
+    student = models.ForeignKey('Account.StudentProfile', on_delete=models.CASCADE, related_name='attendance_records')
+    date = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=[('Present', 'Present'), ('Absent', 'Absent'), ('Leave', 'Leave')])
     remark = models.TextField(blank=True, null=True)
 
-    def __str__(self):
-        return f"{self.student.username} - {self.date} ({self.status})"  
-      
-# Basic notices ( Time table ,holidays, PTM, events)    
-class Notice(models.Model):
-    title = models.CharField(max_length=200)
-    message = models.TextField()
-    audience_type = MultiSelectField(max_length=50, choices=[
-        ('All', 'All'),
-        ('Parents', 'Parents'),
-        ('Students', 'Students'),
-        ('Teachers', 'Teachers')
-    ])
-    date = models.DateField(auto_now_add=True)
+    class Meta:
+        unique_together = ('student', 'date')  # Prevent duplicate entries
 
     def __str__(self):
-        return self.title    
+        return f"{self.student.user.username} - {self.date} ({self.status})"
+
+# Basic notices ( Time table ,holidays, PTM, events)    
+# from django.contrib.auth import get_user_model
+
+# Dynamically get your custom User model
+User = get_user_model()
+
+
+class NoticeModel(models.Model):
+    TARGET_CHOICES = [
+        ('student', 'Student'),
+        ('classes', 'classes'),
+        ('Teachers', 'Teachers'),
+
+    ]
+
+    # --- Target info ---
+    target = models.CharField(
+        max_length=20,
+        choices=TARGET_CHOICES,
+        default='students',
+        help_text="Select who this notice is for"
+    )
+    class_name = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Specify class if applicable (leave empty for all classes)"
+    )
+
+    # --- Notice details ---
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    applicable_date = models.DateField(default=timezone.now)
+
+    # --- Specific students (optional) ---
+    specific_students = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Comma-separated names or admission numbers if notice is for specific students"
+    )
+
+    # --- Meta and control fields ---
+    posted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # ✅ safer than get_user_model() at top level
+        on_delete=models.CASCADE,
+        limit_choices_to={'is_staff': True},
+        related_name="notices_posted",
+        default=None
+    )
+    is_published = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Notice"
+        verbose_name_plural = "Notices"
+
+    def __str__(self):
+        return f"{self.title} ({self.applicable_date})"
+
+    # --- Helper methods ---
+    def get_specific_students_list(self):
+        """Convert comma-separated string to list"""
+        if self.specific_students:
+            return [s.strip() for s in self.specific_students.split(',') if s.strip()]
+        return []
+
+    def is_for_all_students(self):
+        """Check if notice applies to all students"""
+        return not self.specific_students and not self.class_name   
 
 # Fee due reminders
 class FeeModel(models.Model):
@@ -163,11 +228,11 @@ class Homework(models.Model):
         ('student', 'Specific Student(s)'),
     ]
 
-    teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='homeworks')
+    Assigned_By_teacher = models.ForeignKey('Account.TeacherProfile', on_delete=models.CASCADE, related_name='homeworks',default=None)
     class_name = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='homeworks', blank=True, null=True)
-    students = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='assigned_homeworks', blank=True)
+    students = models.ManyToManyField('Account.StudentProfile', related_name='assigned_homeworks_to', blank=True)
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(max_length=1025)
     subject = models.CharField(max_length=100)
     due_date = models.DateField()
     file = models.FileField(upload_to='homework_files/', blank=True, null=True)
@@ -335,3 +400,20 @@ class ReportCard(models.Model):
     
     def __str__(self):
         return f"Report Card - {self.student} - {self.exam}"
+    
+class TimeTable(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to='uploadTimeTables/')
+    file_type = models.CharField(max_length=20, blank=True)  # auto-filled later
+    uploaded_by = models.ForeignKey('Account.TeacherProfile', on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_on = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            _, ext = os.path.splitext(self.file.name)
+            self.file_type = ext.lower().replace('.', '') or 'other'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title    

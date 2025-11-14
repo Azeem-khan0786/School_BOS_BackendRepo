@@ -18,13 +18,17 @@ urlpatterns = [
     path('classrooms/', ClassRoomAPIView.as_view(), name='classroom-list'),
     path('classrooms/<int:pk>/', ClassRoomAPIView.as_view(), name='classroom-detail'), 
 
+    # GET /attendance/class/1/students/
+    path('class/<int:class_id>/students/', views.ClassStudentsView.as_view(), name='class-students'),
+    path('mark/', views.MarkAttendanceView.as_view(), name='mark-attendance'),
+
     # Class APIs
     path('classes/', ClassAPIView.as_view(), name='class-list'),
     path('classes/<int:pk>/', ClassAPIView.as_view(), name='class-detail'),
 
-    path('attendence', views.AttendanceView.as_view(), name='attendance'),
+    # path('attendence', views.AttendanceView.as_view(), name='attendance'),
     path('approve_inquiry', views.approve_inquiry, name='approve_inquiry'),
-    path('notice', views.NoticeView.as_view(), name='notice'),
+    # path('notice', views.NoticeView.as_view(), name='notice'),
     path('fee', views.FeeView.as_view(), name='fee'),
     path('faq', views.FAQAutoReplyView.as_view(), name='faq-auto-reply'),
     path('admin_dashboard', views.AdminDashboard.as_view(), name='admin_dashboard'),
@@ -34,6 +38,13 @@ urlpatterns = [
     path('issue/', views.IssueBookView.as_view(), name='issue-book'),                # POST
     path('return/<int:pk>/', views.ReturnBookView.as_view(), name='return-book'),    # PUT
     path('issued/', views.IssuedBookListView.as_view(), name='issued-books'),        # GET
+
+    # TimeTable
+    path('timetables/', views.TimeTableListAPIView.as_view(), name='timetable-list'),
+    path('timetables/create/', views.TimeTableCreateAPIView.as_view(), name='timetable-create'),
+    path('timetables/<int:pk>/', views.TimeTableDetailAPIView.as_view(), name='timetable-detail'),
+    path('timetables/<int:pk>/update/',views.TimeTableUpdateAPIView.as_view(), name='timetable-update'),
+    path('timetables/<int:pk>/delete/', views.TimeTableDeleteAPIView.as_view(), name='timetable-delete'),
 ]
 
 # ✅ Combine with router URLs

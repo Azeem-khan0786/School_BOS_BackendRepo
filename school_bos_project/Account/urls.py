@@ -14,11 +14,27 @@ urlpatterns = [
 
     # path('profile/<int:pk>/', views.ProfileView.as_view(), name='profile-detail'),  # GET
     # path('profile/', views.ProfileView.as_view(), name='profile-detail'),  # POST
-    path('student_profile/<int:pk>/', views.StudentProfileView.as_view(), name='student-profile-detail'), # GET
-    path('student_profile/', views.StudentProfileView.as_view(), name='student-profile-detail'),  # POST
+    # path('student_profile/<int:pk>/', views.StudentProfileView.as_view(), name='student-profile-detail'), # GET
+    # path('student_profile/', views.StudentProfileView.as_view(), name='student-profile-detail'),  # POST
 
-    path('teacher_profile/<int:pk>/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # GET
-    path('teacher_profile/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # POST
+    # Student CRUD endpoints
+
+    path('students/', views.StudentListAPIView.as_view(), name='student-list'),
+    path('students/create/', views.StudentCreateAPIView.as_view(), name='student-create'),
+    path('students/<int:pk>/', views.StudentDetailAPIView.as_view(), name='student-detail'),
+    path('students/<int:pk>/update/', views.StudentUpdateAPIView.as_view(), name='student-update'),
+    path('students/<int:pk>/delete/', views.StudentDeleteAPIView.as_view(), name='student-delete'), 
+    path('students/search/', views.StudentSearchView.as_view(), name='student-search'),
+
+    path('teachers/', views.TeacherListAPIView.as_view(), name='teacher-list'),
+    path('teachers/create/',views.TeacherCreateAPIView.as_view(), name='teacher-create'),
+    path('teachers/<int:pk>/', views.TeacherDetailAPIView.as_view(), name='teacher-detail'),
+    path('teachers/<int:pk>/update/', views.TeacherUpdateAPIView.as_view(), name='teacher-update'),
+    path('teachers/<int:pk>/delete/', views.TeacherDeleteAPIView.as_view(), name='teacher-delete'),
+    path('teachers/search/', views.TeacherSearchView.as_view(), name='teacher-search'),
+
+    # path('teacher_profile/<int:pk>/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # GET
+    # path('teacher_profile/', views.TeacherProfileView.as_view(), name='teacher-profile-detail'),  # POST
 
     path('parent_profile/<int:pk>/', views.ParentProfileView.as_view(), name='parent-profile-detail'),  # GET
     path('parent_profile/', views.ParentProfileView.as_view(), name='parent-profile-detail'),  # POST

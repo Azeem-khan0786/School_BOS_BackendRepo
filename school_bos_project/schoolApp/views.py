@@ -4,13 +4,13 @@ from rest_framework import viewsets
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser,IsAuthenticated, AllowAny
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue
+from rest_framework.permissions import IsAdminUser,IsAuthenticated,AllowAny,SAFE_METHODS,BasePermission
+from schoolApp.models import AdmissionInquiry,Attendance,FeeModel,FAQ,ClassRoom,Homework,Subject,Class,Book, BookIssue,TimeTable
 from Account.models import StaffProfile,TeacherProfile,ParentProfile,StudentProfile
-from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,NoticeSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer
+from schoolApp.serializers import AdmissionInquirySerializer,AttendanceSerializer,FeeSerializer,FAQSerializer,SubjectSerializer,ClassRoomSerializer,ClassSerializer,HomeworkSerializer,BookSerializer, BookIssueSerializer,TimeTableSerializer
 from Account.serializers import StudentProfileSerializer
 from django.contrib.auth import get_user_model
-from datetime import date
+from datetime import date,timezone
 from rest_framework.response import Response
 from schoolApp.permissions import IsAdminOrTeacher 
 from django.views.decorators.csrf import csrf_exempt
@@ -160,56 +160,42 @@ def approve_inquiry(inquiry_id):
     inquiry.save()
     return student_user
 
-class AttendanceView(generics.ListCreateAPIView):
-    queryset = Attendance.objects.all().order_by('-date')
-    serializer_class = AttendanceSerializer
-    permission_classes = [AllowAny]
+# Get all students of a class
+class ClassStudentsView(APIView):
+    def get(self, request, class_id):
+        students = StudentProfile.objects.filter(class_room_id=class_id)
+        data = [
+            {"id": s.id, "name": s.user.username, "enrollment_no": s.enrollment_no}
+            for s in students
+        ]
+        return Response(data)
 
-    def perform_create(self, serializer):
-        student_name = self.request.data.get("student_name")
-        date = serializer.validated_data.get("date")
 
-        # Fetch student instance from username
-        User = get_user_model()
-        student_user = User.objects.filter(username__iexact=student_name).first()
+# Mark attendance for all students in class
+class MarkAttendanceView(APIView):
+    def post(self, request):
+        class_room_id = request.data.get('class_room')
+        records = request.data.get('records', [])
+        date = timezone.now().date()
 
-        if not student_user:
-            raise serializers.ValidationError({"student_name": "Student not found"})
+        responses = []
+        for record in records:
+            student_id = record.get('student')
+            status_value = record.get('status')
 
-        # Prevent duplicate attendance
-        if Attendance.objects.filter(student=student_user, date=date).exists():
-            raise serializers.ValidationError(
-                {"detail": "Attendance already marked for this date."}
+            attendance, created = Attendance.objects.update_or_create(
+                student_id=student_id,
+                date=date,
+                defaults={'class_room_id': class_room_id, 'status': status_value}
             )
+            responses.append(AttendanceSerializer(attendance).data)
 
-        # Save attendance record
-        attendance = serializer.save()
+        return Response({"message": "Attendance marked successfully", "data": responses}, status=status.HTTP_201_CREATED)
 
-        # ✅ Send WhatsApp notification to parent
-        if getattr(settings, "ENABLE_WHATSAPP", False):
-            student_profile = getattr(student_user, "student_profile", None)
-            parent = getattr(student_profile, "parent", None)
-            phone = getattr(parent, "phone_number", None)
-
-            if phone:
-                from whatsapp.utility import send_message_service
-
-                variables = {
-                    "1": student_user.username,
-                    "2": str(date),
-                    "3": attendance.status
-                }
-
-                send_message_service(
-                    template_name="attendance",
-                    phone=phone,
-                    variables=variables
-                )
-        
-
-class NoticeView(generics.ListCreateAPIView):
-    queryset = Notice.objects.all().order_by('-date')
-    serializer_class = NoticeSerializer        
+# class NoticeView(generics.ListCreateAPIView):
+    # queryset = Notice.objects.all().order_by('-created_at')
+    # serializer_class = NoticeSerializer     
+    pass   
 
 class FeeView(generics.ListCreateAPIView):
     queryset = FeeModel.objects.all().order_by('due_date')
@@ -242,7 +228,7 @@ class HomeworkViewSet(viewsets.ModelViewSet):
     # permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(teacher=self.request.user)
+        serializer.save(Assigned_By_teacher=self.request.user)
 
 class AdminDashboard(APIView):
     # permission_classes = [IsAdminUser]     
@@ -346,3 +332,80 @@ class ReturnBookView(APIView):
 class IssuedBookListView(generics.ListAPIView):
     queryset = BookIssue.objects.all()
     serializer_class = BookIssueSerializer    
+
+
+class IsAdminUserOrReadOnly(BasePermission):
+    """
+    Allow only admin users to create, update, or delete.
+    """
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user and request.user.is_staff
+
+
+# 🔹 CREATE (Upload TimeTable)
+class TimeTableCreateAPIView(APIView):
+    # permission_classes = [IsAdminUserOrReadOnly]
+
+    def post(self, request):
+        serializer = TimeTableSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(uploaded_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 🔹 LIST (Get All TimeTables - Upload History)
+class TimeTableListAPIView(APIView):
+    permission_classes = [AllowAny]  # everyone can view
+
+    def get(self, request):
+        timetables = TimeTable.objects.all().order_by('-uploaded_on')
+        serializer = TimeTableSerializer(timetables, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 🔹 RETRIEVE (Get Single TimeTable by ID)
+class TimeTableDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        try:
+            timetable = TimeTable.objects.get(pk=pk)
+        except TimeTable.DoesNotExist:
+            return Response({'error': 'TimeTable not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TimeTableSerializer(timetable)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# 🔹 UPDATE (Full update)
+class TimeTableUpdateAPIView(APIView):
+    # permission_classes = [IsAdminUserOrReadOnly]
+
+    def put(self, request, pk):
+        try:
+            timetable = TimeTable.objects.get(pk=pk)
+        except TimeTable.DoesNotExist:
+            return Response({'error': 'TimeTable not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TimeTableSerializer(timetable, data=request.data)
+        if serializer.is_valid():
+            serializer.save(uploaded_by=request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# 🔹 DELETE (Remove TimeTable)
+class TimeTableDeleteAPIView(APIView):
+    # permission_classes = [IsAdminUserOrReadOnly]
+
+    def delete(self, request, pk):
+        try:
+            timetable = TimeTable.objects.get(pk=pk)
+        except TimeTable.DoesNotExist:
+            return Response({'error': 'TimeTable not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        timetable.delete()
+        return Response({'message': 'TimeTable deleted successfully'}, status=status.HTTP_204_NO_CONTENT)   

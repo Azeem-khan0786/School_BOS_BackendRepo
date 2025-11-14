@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate,get_user_model
 
 # from Account.models import User, Profile ,StudentProfile,TeacherProfile,StaffProfile,ParentProfile
 
-from schoolApp.models import AdmissionInquiry,Attendance,Notice,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard
+from schoolApp.models import AdmissionInquiry,Attendance,FeeModel,FAQ,ClassRoom,Homework, Subject,Class,Book, BookIssue, Exam, ExamSubject, Grade, ReportCard,TimeTable
 User  =  get_user_model()
 
 
@@ -14,23 +14,12 @@ class AdmissionInquirySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AttendanceSerializer(serializers.ModelSerializer):
-    student_name = serializers.CharField(write_only=True)
+    student_name = serializers.CharField(source='student.user.username', read_only=True)
+    class_name = serializers.CharField(source='class_room.class_name', read_only=True)
 
     class Meta:
         model = Attendance
-        fields = ['id', 'student', 'student_name', 'status', 'date']
-        extra_kwargs = {'student': {'read_only': True}}
-
-    def create(self, validated_data):
-        student_name = validated_data.pop('student_name')
-        User = get_user_model()
-        student = User.objects.filter(username__iexact=student_name).first()
-
-        if not student:
-            raise serializers.ValidationError({"student_name": "Student not found"})
-        
-        attendance = Attendance.objects.create(student=student, **validated_data)
-        return attendance
+        fields = ['id', 'selected_class', 'student', 'student_name', 'date', 'status', 'remark']
     
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,9 +37,9 @@ class ClassSerializer(serializers.ModelSerializer):
     subjects = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Subject.objects.all()
     )
-    classrooms = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=ClassRoom.objects.all()
-    )
+    # classrooms = serializers.PrimaryKeyRelatedField(
+    #     many=True, queryset=ClassRoom.objects.all()
+    # )
 
     class Meta:
         model = Class
@@ -71,10 +60,10 @@ class ClassSerializer(serializers.ModelSerializer):
 
         return data
         
-class NoticeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Notice
-        fields = '__all__'
+# class NoticeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Notice
+#         fields = '__all__'
 class FeeSerializer(serializers.ModelSerializer):
     class Meta:
          model = FeeModel   
@@ -84,30 +73,44 @@ class FAQSerializer(serializers.ModelSerializer):
          model = FAQ   
          fields = '__all__'          
 
-
-
 class HomeworkSerializer(serializers.ModelSerializer):
-    teacher_name = serializers.CharField(source='teacher.username', read_only=True)
+    teacher_name = serializers.CharField(source='Assigned_By_teacher.username', read_only=True)
     classroom_name = serializers.CharField(source='classroom.__str__', read_only=True)
+
     student_ids = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
+        queryset=User.objects.none(),  # default: empty
         source='students',
         many=True,
         required=False
     )
+
     student_names = serializers.SlugRelatedField(
-        slug_field='username', source='students', read_only=True, many=True
+        slug_field='username',
+        source='students',
+        read_only=True,
+        many=True
     )
 
     class Meta:
         model = Homework
         fields = [
-            'id', 'teacher', 'teacher_name',
-            'assignment_type',  'classroom_name',
+            'id', 'Assigned_By_teacher', 'teacher_name',
+            'assignment_type', 'classroom', 'classroom_name',
             'student_ids', 'student_names',
             'title', 'description', 'subject', 'due_date', 'file', 'created_at'
         ]
         read_only_fields = ['created_at']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request_data = self.initial_data if hasattr(self, 'initial_data') else {}
+        classroom_id = request_data.get('classroom') or request_data.get('class_name')
+
+        # ✅ Filter only students of that class if class is selected
+        if classroom_id:
+            self.fields['student_ids'].queryset = User.objects.filter(studentprofile__classroom_id=classroom_id)
+        else:
+            self.fields['student_ids'].queryset = User.objects.none()
 
     def validate(self, attrs):
         assignment_type = attrs.get('assignment_type')
@@ -239,3 +242,16 @@ class ReportCardSerializer(serializers.ModelSerializer):
     def get_grades(self, obj):
         grades = Grade.objects.filter(student=obj.student, exam=obj.exam)
         return GradeSerializer(grades, many=True).data
+    
+    #  TimeTableSerializer
+class TimeTableSerializer(serializers.ModelSerializer):
+    uploaded_by_name = serializers.CharField(source='uploaded_by.username', read_only=True)
+    uploaded_on = serializers.DateTimeField(format="%y-%m-%d - %H:%M")
+
+    class Meta:
+        model = TimeTable
+        fields = [
+            'id', 'title', 'description', 'file',
+            'file_type', 'uploaded_by_name', 'uploaded_on'
+        ]
+        read_only_fields = ['file_type', 'uploaded_by_name', 'uploaded_on']    
