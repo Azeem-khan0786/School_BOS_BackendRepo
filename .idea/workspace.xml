@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="0a125c53-13ac-4f66-b29e-09507dbfa9c6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/school_bos_project/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/school_bos_project/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/school_bos_project/school_bos_project/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/school_bos_project/school_bos_project/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/school_bos_project/whatsapp/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/school_bos_project/whatsapp/views.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 5
+}</component>
+  <component name="ProjectId" id="35CdPrpzc8bSH3WPJNfwWlK6R7v" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;nishanka-backend&quot;
+  }
+}</component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="0a125c53-13ac-4f66-b29e-09507dbfa9c6" name="Changes" comment="" />
+      <created>1762617972657</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1762617972657</updated>
+    </task>
+    <servers />
+  </component>
+</project>

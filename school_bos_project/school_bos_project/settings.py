@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'schoolApp',
     'rest_framework_simplejwt.token_blacklist',
     'multiselectfield',
-    'whatsapp'
+    'whatsapp',
+    'chat'
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "*",
+]
+
 
 ROOT_URLCONF = 'school_bos_project.urls'
 
@@ -143,6 +150,6 @@ from datetime import timedelta
 # }
 ENABLE_WHATSAPP = True
 WHATSAPP_PHONE_NUMBER_ID = "770274896170001"
-WHATSAPP_ACCESS_TOKEN = "EAAa5YLqZCC1cBP7roLeUEVe2bVHqJeFkhNPNE6dEg5f6f9ESF6XSw6KqAiamntCxUb5vm8jRFeKr5OkB9q6oMebFlIbxOUV6iuY06BTZAY28cqqAJndYzOcWQETFw98zvCBlQtYZAE2Mj5btnSiLFxUCOnFXFiZBOvR5oLv5EBoaeWZAjkHE1N8PXxZC3b9nDGlb8ZBEozbgZAKxEPbpP5v1UKljlPHZAUdj05wOHONnEYBZCCa3GZBl5dE1anxz9YNwZABxAlykzgZC8877ZAaPV4eZASy"
+WHATSAPP_ACCESS_TOKEN = "EAAa5YLqZCC1cBP8Rt8cf6ZC1xvBqa9izGO1nhGmdUUTuwab3apoUrNJozKWs6lHWTAvN95xiaeMn4vCEZByVDWOEFGtJOZCLElnOQEEgN5hc6uSxohP5gSfxL7QJ6BHC5GmssZCyq0L7bCxZCmIyvPvg7dtQkygmnCV5CtO0FYohVGz7lZAmTMIs8asRVdijBQfCG8ZBPMFkx6Pn"
 VERIFY_TOKEN = "navonous_verify_token"
 APP_SECRET = "c0214f5fd8bb74bef5a30ff5c61a8296"
